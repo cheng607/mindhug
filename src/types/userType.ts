@@ -28,6 +28,19 @@ export interface UserInfoType {
     createdAt: string,
     updatedAt: string
 }
+
+// 注册信息
+export interface RegisterParams {
+    username: string,
+    email: string,
+    nickname?: string,
+    phone?: string,
+    password: string,
+    confirmPassword: string,
+    gender: number, // 1 男 2 女
+    userType: number    // 权限（默认传1）
+}
+
 export interface LoginResponse {
     userInfo: UserInfoType,
     token: string,

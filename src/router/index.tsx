@@ -1,5 +1,4 @@
 import { createBrowserRouter } from "react-router-dom";
-import App from "../App";
 import NotFound from "../pages/NotFound";
 import DashBoard from "../components/DashBoard";
 import BackLayout from "../pages/BackLayout";
@@ -9,10 +8,15 @@ import Emotional from "../components/Emotional";
 import Auth from "../pages/Auth";
 import LoginForm from "../components/LoginForm";
 import RegisterForm from "../components/RegisterForm";
+import Home from "../pages/Home";
+import { App } from "antd";
 
 const userRoutes = {
-    path: '/',
-    element: <App />
+    path: '/user',
+    element: <App />,
+    children: [
+        // { path: '', element: <Home /> }
+    ]
 }
 const authRoutes = {
     path: '/auth',
@@ -28,13 +32,14 @@ const backRoutes = {
     element: <BackLayout />,
     children: [
         { path: 'dashboard', element: <DashBoard /> },
-        { path: 'konwledge', element: <Knowledge /> },
+        { path: 'Knowledge', element: <Knowledge /> },
         { path: 'consultations', element: <Consultations /> },
         { path: 'emotional', element: <Emotional /> },
     ]
 }
 
 const router = createBrowserRouter([
+    { path: '/', element: <Home /> },
     userRoutes,
     authRoutes,
     backRoutes,

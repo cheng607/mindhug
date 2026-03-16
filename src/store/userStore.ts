@@ -24,6 +24,7 @@ export const useUserStore = create<UserStoreState>((set) => ({
     clearUserInfo: () => {
         localStorage.removeItem('userInfo');
         localStorage.removeItem('token');
-        set({ userInfo: null, token: null });
+        localStorage.removeItem('roleType')
+        set({ userInfo: null, token: null, roleType: null });
     },
 }));

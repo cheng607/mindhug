@@ -85,7 +85,7 @@ function BackLayout() {
             message.success(res.data);
             // 延迟跳转，确保提示显示
             setTimeout(() => {
-                navigate('/');
+                navigate('/auth');
             }, 1000);
         } catch (error) {
             message.error((error as Error).message)
