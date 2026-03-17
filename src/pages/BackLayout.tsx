@@ -99,8 +99,8 @@ function BackLayout() {
         }
     };
     return (
-        <Layout className='h-[100vh]'>
-            <Sider trigger={null} collapsible collapsed={collapsed}>
+        <Layout className='h-auto min-h-screen'>
+            <Sider trigger={null} collapsible collapsed={collapsed} className='h-auto'>
                 <div className='h-24 flex items-center justify-center gap-3'>
                     <img src={AgentIcon} className='w-14 h-14' />
                     {!collapsed && (

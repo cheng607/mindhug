@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react"
-import { getCategory, getArticle } from "../apis/konwledge"
-import type { articleData, articleType, categoryType, articleParamsType } from "../types/konwledgeType"
+import { getCategory, getArticle } from "../apis/article"
+import type { articleData, articleType, categoryType, articleParamsType } from "../types/articleType"
 import { Button, Divider, Table, Space, message } from "antd";
 import TableSearch from "./TableSearch";
+import ArticleDialog from "./ArticleDialog";
 
 // 定义表格列的类型（和articleType字段对应）
 interface ArticleTableItem {
@@ -12,6 +13,7 @@ interface ArticleTableItem {
     author: string; // 作者
     readCount: number; // 阅读量
     publishedAt: string; // 发布时间
+    status: number; // 文章状态
     id: number | string; // 文章ID（用于操作）
 }
 
@@ -20,6 +22,9 @@ export default function Knowledge() {
     const [loading, setLoading] = useState<boolean>(true);
     const [list, setList] = useState<articleType[]>([]); // 初始值改为空数组，避免undefined
     const [total, setTotal] = useState<number>(0); // 新增：总条数状态
+    const [isAdd, setIsAdd] = useState<boolean>(false)
+    const [dialogTitle, setDialogTitle] = useState<string>('')
+    const [currentArticle, setCurrentArticle] = useState<articleType>();
 
     // 1. 获取分类列表
     useEffect(() => {
@@ -90,6 +95,7 @@ export default function Knowledge() {
             author: item.authorName || "未知作者",
             readCount: item.readCount || 0,
             publishedAt: item.publishedAt || "未发布",
+            status: item.status,
             id: item.id
         };
     });
@@ -143,6 +149,24 @@ export default function Knowledge() {
                     >
                         编辑
                     </Button>
+                    {record.status === 1 ?
+                        <Button
+                            type="link"
+                            size="small"
+                            className="text-green-500"
+                            onClick={() => handleEdit(record.id)}
+                        >
+                            发布
+                        </Button> :
+                        <Button
+                            type="link"
+                            size="small"
+                            className="text-yellow-500"
+                            onClick={() => handleEdit(record.id)}
+                        >
+                            下线
+                        </Button>
+                    }
                     <Button
                         type="link"
                         size="small"
@@ -155,12 +179,34 @@ export default function Knowledge() {
             ),
         },
     ];
+    const handleAdd = () => {
+        setDialogTitle("新增文章");
+        setCurrentArticle(null); // 清空编辑数据
+        setIsAdd(true); // 显示弹窗
+    };
 
     // 5. 编辑/删除操作示例
     const handleEdit = (id: number | string) => {
-        console.log("编辑文章：", id);
-        // 这里可以跳转到编辑页面或打开编辑弹窗
-        message.info(`准备编辑ID为 ${id} 的文章`);
+        try {
+            setLoading(true);
+            // 调用获取单篇文章的接口（需补充实现）
+            // const res = await getArticleDetail(id);
+            // setCurrentArticle(res.data);
+            // 临时模拟：从列表中取对应数据
+            const article = list.find(item => item.id === id);
+            if (article) {
+                setCurrentArticle(article);
+                setDialogTitle("编辑文章");
+                setIsAdd(true); // 显示弹窗
+            } else {
+                message.error("未找到该文章数据");
+            }
+        } catch (error) {
+            console.error("获取文章详情失败：", error);
+            message.error("编辑失败，请重试");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleDelete = (id: number | string) => {
@@ -169,12 +215,45 @@ export default function Knowledge() {
         message.warning(`确认删除ID为 ${id} 的文章？`);
     };
 
+    const handleDialogSubmit = async () => {
+        try {
+            setLoading(true);
+            if (currentArticle) {
+                // 编辑逻辑：调用编辑接口
+                // await editArticle({ ...values, id: currentArticle.id });
+                message.success("编辑文章成功");
+            } else {
+                // await addArticle(values);
+                message.success("新增文章成功");
+            }
+            // 重新加载列表
+            fetchList({
+                title: '',
+                categoryId: '',
+                status: '',
+                authorName: '',
+                currentPage: '1',
+                size: '10'
+            });
+        } catch (error) {
+            console.error("提交文章失败：", error);
+            message.error(currentArticle ? "编辑失败" : "新增失败");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 关闭弹窗
+    const handleDialogCancel = () => {
+        setIsAdd(false);
+        setCurrentArticle(null);
+    };
     return (
         <div style={{ padding: '20px' }}>
             <div className="flex items-center justify-between mb-4">
                 <div className="text-lg font-bold">知识文库</div>
                 <div className="flex items-center gap-4">
-                    <Button type="primary">新增</Button>
+                    <Button type="primary" onClick={handleAdd}>新增</Button>
                     <Button type="primary">批量操作</Button>
                 </div>
             </div>
@@ -189,17 +268,26 @@ export default function Knowledge() {
                     dataSource={dataSource}
                     columns={columns}
                     loading={loading} // 加载状态
-                    rowKey="key" // 行唯一标识（也可以省略，默认取key字段）
-                    bordered // 显示边框
+                    rowKey="key" // 行唯一标识
+                    bordered
                     pagination={{
-                        pageSize: 10, // 每页10条
-                        showSizeChanger: true, // 允许调整每页条数
-                        showTotal: (total) => `共 ${total} 条数据`, // 显示总条数
-                        total: total, // 总条数从API返回
-                    }} // 分页配置
-                    locale={{ emptyText: "暂无文章数据" }} // 空数据提示
+                        pageSize: 10,
+                        showSizeChanger: true,
+                        showTotal: (total) => `共 ${total} 条数据`,
+                        total: total,
+                    }}
+                    locale={{ emptyText: "暂无文章数据" }}
                 />
             </div>
+            <ArticleDialog
+                visible={isAdd}
+                onCancel={handleDialogCancel}
+                onSubmit={handleDialogSubmit}
+                categories={categories}
+                title={dialogTitle}
+                initialValues={currentArticle}
+            />
+
         </div>
     )
 }

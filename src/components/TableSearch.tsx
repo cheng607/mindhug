@@ -1,5 +1,5 @@
 import { Button, Form, Input, Row, Select } from "antd";
-import { type articleParamsType, type categoryType } from "../types/konwledgeType";
+import { type articleParamsType, type categoryType } from "../types/articleType";
 
 interface CategoryProps {
     categories: categoryType[],
@@ -34,7 +34,10 @@ export default function TableSearch(props: CategoryProps) {
                         <Input placeholder={'请输入文章标题'} />
                     </Form.Item>
                     <Form.Item className="w-72" label="分类" name="categoryId">
-                        <Select placeholder={'请选择分类'} options={categoryOptions} />
+                        <Select placeholder={'请选择分类'} options={[
+                            { label: '全部', value: '' },
+                            ...categoryOptions
+                        ]} />
                     </Form.Item>
                     <Form.Item className="w-72" label="状态" name="status">
                         <Select placeholder={'请选择状态'} options={[

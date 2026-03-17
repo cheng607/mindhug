@@ -44,3 +44,13 @@ export interface articleData {
     size: number,
     total: number
 }
+
+export interface addArticleType {
+    categoryId: number;
+    content: string;
+    coverImage: string;
+    id: string;
+    summary: string;
+    tags: string;
+    title: string;
+}
