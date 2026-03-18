@@ -3,6 +3,7 @@ import type { LoginParams } from '../types/userType';
 import { login } from '../apis/user';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUserStore } from '../store/userStore';
+import { SwapLeftOutlined } from '@ant-design/icons';
 
 export default function LoginForm() {
     const navigate = useNavigate()
@@ -31,7 +32,7 @@ export default function LoginForm() {
     return (
         <div className='flex items-center justify-center w-1/2'>
             <div className='relative flex flex-col items-center justify-center gap-5'>
-                <Link to="/" className='absolute -top-20 -left-0'>◀返回首页</Link>
+                <Link to="/" className='absolute -top-20 -left-0'><SwapLeftOutlined />返回首页</Link>
                 <div className='text-3xl font-semibold'>登录您的账户</div>
                 <div className='text-sm text-gray-500'>请输入您的登录信息</div>
                 <Form
