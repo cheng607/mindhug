@@ -35,7 +35,8 @@ export interface articleType {
     favoriteCount: number,
     publishedAt: string,
     createdAt: string,
-    updatedAt: string
+    updatedAt: string,
+    content?: string
 }
 export interface articleData {
     current: number,

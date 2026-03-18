@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { getCategory, getArticle } from "../apis/article"
+import { getCategory, getArticle, getArticleById, deleteArticle, updateArticleStatus } from "../apis/article"
 import type { articleData, articleType, categoryType, articleParamsType } from "../types/articleType"
 import { Button, Divider, Table, Space, message } from "antd";
 import TableSearch from "./TableSearch";
@@ -14,7 +14,7 @@ interface ArticleTableItem {
     readCount: number; // 阅读量
     publishedAt: string; // 发布时间
     status: number; // 文章状态
-    id: number | string; // 文章ID（用于操作）
+    id: string; // 文章ID
 }
 
 export default function Knowledge() {
@@ -30,7 +30,7 @@ export default function Knowledge() {
     useEffect(() => {
         const fetchCategory = async () => {
             try {
-                setLoading(false);
+                setLoading(true); // 开始加载
                 const res = await getCategory();
                 if (Array.isArray(res.data)) {
                     setCategories(res.data);
@@ -41,13 +41,13 @@ export default function Knowledge() {
                 console.error("获取分类出错：", error);
                 message.error("获取分类失败，请刷新重试");
             } finally {
-                setLoading(true);
+                setLoading(false); // 结束加载
             }
         };
         fetchCategory();
     }, []);
 
-    // 初始加载文章列表（当分类加载完成后）
+    // 初始加载文章列表
     useEffect(() => {
         if (categories.length > 0) {
             fetchList({
@@ -55,8 +55,8 @@ export default function Knowledge() {
                 categoryId: '',
                 status: '',
                 authorName: '',
-                currentPage: '',
-                size: '1000'
+                currentPage: '1', // 设置默认页码
+                size: '10' // 设置合理的页面大小
             });
         }
     }, [categories]);
@@ -64,7 +64,7 @@ export default function Knowledge() {
     // 2. 接收子组件传递的查询参数，获取文章列表
     const fetchList = async (articleParams: articleParamsType) => {
         try {
-            setLoading(false);
+            setLoading(true); // 开始加载
             const res = await getArticle(articleParams);
             const articleData = res.data as articleData;
             if (articleData?.records) {
@@ -80,8 +80,21 @@ export default function Knowledge() {
             message.error("获取文章失败，请刷新重试");
             setList([]);
             setTotal(0);
-            setLoading(true);
+        } finally {
+            setLoading(false); // 结束加载
         }
+    };
+
+    // 刷新当前列表的辅助函数
+    const refreshList = () => {
+        fetchList({
+            title: '',
+            categoryId: '',
+            status: '',
+            authorName: '',
+            currentPage: '1',
+            size: '10'
+        });
     };
 
     // 3. 映射文章数据为表格所需格式
@@ -149,12 +162,12 @@ export default function Knowledge() {
                     >
                         编辑
                     </Button>
-                    {record.status === 1 ?
+                    {record.status === 0 ?
                         <Button
                             type="link"
                             size="small"
                             className="text-green-500"
-                            onClick={() => handleEdit(record.id)}
+                            onClick={() => handleStatus(record.id, 1)}
                         >
                             发布
                         </Button> :
@@ -162,7 +175,7 @@ export default function Knowledge() {
                             type="link"
                             size="small"
                             className="text-yellow-500"
-                            onClick={() => handleEdit(record.id)}
+                            onClick={() => handleStatus(record.id, 0)}
                         >
                             下线
                         </Button>
@@ -181,25 +194,22 @@ export default function Knowledge() {
     ];
     const handleAdd = () => {
         setDialogTitle("新增文章");
-        setCurrentArticle(null); // 清空编辑数据
+        setCurrentArticle(undefined); // 清空编辑数据
         setIsAdd(true); // 显示弹窗
     };
 
     // 5. 编辑/删除操作示例
-    const handleEdit = (id: number | string) => {
+    const handleEdit = async (id: number | string) => {
         try {
             setLoading(true);
-            // 调用获取单篇文章的接口（需补充实现）
-            // const res = await getArticleDetail(id);
-            // setCurrentArticle(res.data);
-            // 临时模拟：从列表中取对应数据
-            const article = list.find(item => item.id === id);
-            if (article) {
-                setCurrentArticle(article);
+            // 调用获取单篇文章的接口
+            const res = await getArticleById(id.toString());
+            if (res.code === '200') {
+                setCurrentArticle(res.data);
                 setDialogTitle("编辑文章");
                 setIsAdd(true); // 显示弹窗
             } else {
-                message.error("未找到该文章数据");
+                message.error("获取文章详情失败");
             }
         } catch (error) {
             console.error("获取文章详情失败：", error);
@@ -208,36 +218,47 @@ export default function Knowledge() {
             setLoading(false);
         }
     };
+    // 更新文章状态
+    const handleStatus = async (id: string, status: number) => {
+        try {
+            // 显示确认弹窗
+            const statusText = status === 1 ? '发布' : '下架';
+            const confirmed = window.confirm(`确认${statusText}该文章？`);
+            if (!confirmed) return;
 
-    const handleDelete = (id: number | string) => {
-        console.log("删除文章：", id);
-        // 这里可以添加确认弹窗，再调用删除接口
-        message.warning(`确认删除ID为 ${id} 的文章？`);
+            setLoading(true);
+            const res = await updateArticleStatus(id, status);
+            if (res.code === '200') {
+                message.success(`${statusText}文章成功`);
+                // 重新加载列表
+                refreshList();
+            } else {
+                message.error(`${statusText}文章失败`);
+            }
+        } catch (error) {
+            console.error('状态切换失败', error);
+            message.error('操作失败，请重试');
+        }
     };
 
-    const handleDialogSubmit = async () => {
+    const handleDelete = async (id: number | string) => {
         try {
+            // 显示确认弹窗
+            const confirmed = window.confirm(`确认删除该文章？`);
+            if (!confirmed) return;
+
             setLoading(true);
-            if (currentArticle) {
-                // 编辑逻辑：调用编辑接口
-                // await editArticle({ ...values, id: currentArticle.id });
-                message.success("编辑文章成功");
+            const res = await deleteArticle(id.toString());
+            if (res.code === '200') {
+                message.success("删除文章成功");
+                // 重新加载列表
+                refreshList();
             } else {
-                // await addArticle(values);
-                message.success("新增文章成功");
+                message.error("删除文章失败");
             }
-            // 重新加载列表
-            fetchList({
-                title: '',
-                categoryId: '',
-                status: '',
-                authorName: '',
-                currentPage: '1',
-                size: '10'
-            });
         } catch (error) {
-            console.error("提交文章失败：", error);
-            message.error(currentArticle ? "编辑失败" : "新增失败");
+            console.error("删除文章失败：", error);
+            message.error("删除失败，请重试");
         } finally {
             setLoading(false);
         }
@@ -246,7 +267,7 @@ export default function Knowledge() {
     // 关闭弹窗
     const handleDialogCancel = () => {
         setIsAdd(false);
-        setCurrentArticle(null);
+        setCurrentArticle(undefined);
     };
     return (
         <div style={{ padding: '20px' }}>
@@ -282,7 +303,6 @@ export default function Knowledge() {
             <ArticleDialog
                 visible={isAdd}
                 onCancel={handleDialogCancel}
-                onSubmit={handleDialogSubmit}
                 categories={categories}
                 title={dialogTitle}
                 initialValues={currentArticle}
