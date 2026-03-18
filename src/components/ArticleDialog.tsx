@@ -1,4 +1,3 @@
-// ArticleDialog.tsx
 import { Form, Input, message, Modal, Select, Upload } from "antd";
 import type { articleType, categoryType } from "../types/articleType";
 import { useState } from "react";
