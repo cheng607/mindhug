@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import {
     MenuFoldOutlined,
     MenuUnfoldOutlined,
@@ -10,65 +10,62 @@ import {
 import { Avatar, Button, Layout, Menu, theme, Dropdown, Space, message } from 'antd';
 import type { DropdownProps, MenuProps } from 'antd';
 import AgentIcon from '../assets/agent.png'
-import DashBoard from '../components/DashBoard';
-import Knowledge from '../components/Knowledge';
-import Consultations from '../components/Consultations';
-import Emotional from '../components/Emotional';
 import { useUserStore } from '../store/userStore';
 import { logout } from '../apis/user';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 const { Header, Sider, Content } = Layout;
-interface MenuType {
-    key: string,
-    path: string,
-    element: ReactNode,
-    icon: ReactNode,
-    label: string
-}
 function BackLayout() {
     const [collapsed, setCollapsed] = useState(false);
-    const initialMenu = {
-        key: '1',
-        path: 'dashboard',
-        element: <DashBoard />,
-        icon: <PieChartOutlined />,
-        label: '数据分析',
-    }
-    const [currentMenu, setCurrentMenu] = useState<MenuType>(initialMenu)
-    // 内容组件设置
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    // 菜单配置
     const menuMap = [
         {
             key: '1',
-            path: 'dashboard',
-            element: <DashBoard />,
+            path: '/back/dashboard',
             icon: <PieChartOutlined />,
             label: '数据分析',
         },
         {
             key: '2',
-            path: 'konwledge',
-            element: <Knowledge />,
+            path: '/back/Knowledge',
             icon: <MessageOutlined />,
             label: '知识文库',
         },
         {
             key: '3',
-            path: 'consultations',
-            element: <Consultations />,
+            path: '/back/consultations',
             icon: <MailOutlined />,
             label: '咨询记录',
         },
         {
             key: '4',
-            path: 'emotional',
-            element: <Emotional />,
+            path: '/back/emotional',
             icon: <UserOutlined />,
             label: '情绪日志',
         }
     ]
+
+    // 获取当前选中的菜单key
+    const getCurrentMenuKey = () => {
+        const currentPath = location.pathname;
+        const menu = menuMap.find(item => item.path === currentPath);
+        return menu?.key || '1';
+    };
+
+    // 获取当前菜单标签
+    const getCurrentMenuLabel = () => {
+        const currentPath = location.pathname;
+        const menu = menuMap.find(item => item.path === currentPath);
+        return menu?.label || '数据分析';
+    };
+
     const handleMenuClick = (key: string) => {
-        const currentMenu = menuMap.find(menu => menu.key === key) || initialMenu;
-        setCurrentMenu(currentMenu);
+        const menu = menuMap.find(item => item.key === key);
+        if (menu) {
+            navigate(menu.path);
+        }
     };
     // 获取用户信息
     const userInfo = useUserStore(state => state.userInfo)
@@ -77,7 +74,7 @@ function BackLayout() {
         token: { colorBgContainer, borderRadiusLG },
     } = theme.useToken();
     const [open, setOpen] = useState(false);
-    const navigate = useNavigate()
+
     const handleLogout: MenuProps['onClick'] = async () => {
         try {
             const res = await logout()
@@ -113,7 +110,7 @@ function BackLayout() {
                 <Menu
                     theme="dark"
                     mode="inline"
-                    defaultSelectedKeys={[currentMenu.key]}
+                    defaultSelectedKeys={[getCurrentMenuKey()]}
                     onClick={(item) => { handleMenuClick(item.key) }}
                     items={menuMap}
                 />
@@ -131,7 +128,7 @@ function BackLayout() {
                                 height: 64,
                             }}
                         />
-                        <div className='text-lg font-bold'>{currentMenu.label}</div>
+                        <div className='text-lg font-bold'>{getCurrentMenuLabel()}</div>
                     </div>
                     <div className='flex items-center mx-5 gap-3'>
                         <span>{userInfo?.nickname}</span>
@@ -167,7 +164,7 @@ function BackLayout() {
                         borderRadius: borderRadiusLG,
                     }}
                 >
-                    {currentMenu.element}
+                    <Outlet />
                 </Content>
             </Layout>
         </Layout>
