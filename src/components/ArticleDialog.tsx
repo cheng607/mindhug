@@ -121,6 +121,8 @@ export default function ArticleDialog({
             onOk={handleOk}
             onCancel={handleCancel}
             width={800}
+            okText="确认"
+            cancelText="取消"
         >
             <Form
                 form={form}
