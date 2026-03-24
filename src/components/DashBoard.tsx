@@ -7,6 +7,7 @@ import Icon4 from "../assets/icon4.png"
 import type { analyticsDataType } from "../types/analyType"
 import * as echarts from 'echarts';
 import { Divider } from "antd"
+import { formatDate } from "../utils"
 
 export default function DashBoard() {
     const [data, setData] = useState<analyticsDataType>()
@@ -379,7 +380,9 @@ export default function DashBoard() {
                         </div>
                         <div className="flex flex-col items-center">
                             <div className="text-gray-400">平均时长</div>
-                            <div className="text-lg font-medium">{data?.consultationStats.avgDurationMinutes}分钟</div>
+                            <div className="text-lg font-medium">
+                                {formatDate(data?.consultationStats.avgDurationMinutes.toString() || '0')}
+                            </div>
                         </div>
                         <div className="flex flex-col items-center">
                             <div className="text-gray-400">活跃用户</div>

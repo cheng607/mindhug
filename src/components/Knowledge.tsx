@@ -22,6 +22,16 @@ export default function Knowledge() {
     const [loading, setLoading] = useState<boolean>(true);
     const [list, setList] = useState<articleType[]>([]); // 初始值改为空数组，避免undefined
     const [total, setTotal] = useState<number>(0); // 新增：总条数状态
+    const [currentPage, setCurrentPage] = useState<number>(1); // 当前页
+    const [pageSize, setPageSize] = useState<number>(10); // 每页数量
+    const [searchParams, setSearchParams] = useState<articleParamsType>({
+        title: '',
+        categoryId: '',
+        status: '',
+        authorName: '',
+        currentPage: '1',
+        size: '10'
+    });
     const [isAdd, setIsAdd] = useState<boolean>(false)
     const [dialogTitle, setDialogTitle] = useState<string>('')
     const [currentArticle, setCurrentArticle] = useState<articleType>();
@@ -65,6 +75,10 @@ export default function Knowledge() {
     const fetchList = async (articleParams: articleParamsType) => {
         try {
             setLoading(true); // 开始加载
+            setSearchParams(articleParams)
+            setCurrentPage(Number(articleParams.currentPage || '1'))
+            setPageSize(Number(articleParams.size || '10'))
+
             const res = await getArticle(articleParams);
             const articleData = res.data as articleData;
             if (articleData?.records) {
@@ -292,10 +306,18 @@ export default function Knowledge() {
                     rowKey="key" // 行唯一标识
                     bordered
                     pagination={{
-                        pageSize: 10,
+                        current: currentPage,
+                        pageSize: pageSize,
                         showSizeChanger: true,
                         showTotal: (total) => `共 ${total} 条数据`,
                         total: total,
+                        onChange: (page, size) => {
+                            fetchList({
+                                ...searchParams,
+                                currentPage: page.toString(),
+                                size: size.toString()
+                            });
+                        }
                     }}
                     locale={{ emptyText: "暂无文章数据" }}
                 />

@@ -9,18 +9,23 @@ import Auth from "../pages/Auth";
 import LoginForm from "../components/LoginForm";
 import RegisterForm from "../components/RegisterForm";
 import Home from "../pages/Home";
-import { App } from "antd";
+import App from "../App";
+import { RequireAuth, RedirectIfAuth, RedirectAdminToBack } from "./RouteGuards";
+import Consultation from "../components/Consultation";
+import Diary from "../components/Diary";
+import Default from "../components/Default";
 
 const userRoutes = {
     path: '/user',
-    element: <App />,
-    children: [
-        // { path: '', element: <Home /> }
-    ]
+    element: <App />
 }
 const authRoutes = {
     path: '/auth',
-    element: <Auth />,
+    element: (
+        <RedirectIfAuth>
+            <Auth />
+        </RedirectIfAuth>
+    ),
     children: [
         { path: "", element: <LoginForm /> },
         { path: 'login', element: <LoginForm /> },
@@ -29,8 +34,13 @@ const authRoutes = {
 }
 const backRoutes = {
     path: '/back',
-    element: <BackLayout />,
+    element: (
+        <RequireAuth allowedRoles={['2']} redirectTo="/">
+            <BackLayout />
+        </RequireAuth>
+    ),
     children: [
+        { path: '', element: <DashBoard /> },
         { path: 'dashboard', element: <DashBoard /> },
         { path: 'Knowledge', element: <Knowledge /> },
         { path: 'consultations', element: <Consultations /> },
@@ -39,7 +49,19 @@ const backRoutes = {
 }
 
 const router = createBrowserRouter([
-    { path: '/', element: <Home /> },
+    {
+        path: '/',
+        element: (
+            <RedirectAdminToBack>
+                <Home />
+            </RedirectAdminToBack>
+        ),
+        children: [
+            { path: '', element: <Default /> },
+            { path: 'consultation', element: <Consultation /> },
+            { path: 'diary', element: <Diary /> },
+        ]
+    },
     userRoutes,
     authRoutes,
     backRoutes,

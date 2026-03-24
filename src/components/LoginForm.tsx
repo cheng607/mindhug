@@ -23,7 +23,7 @@ export default function LoginForm() {
             if (res.data.roleType == '2') {
                 navigate('/back')
             } else if (res.data.roleType == '1') {
-                navigate('/home')
+                navigate('/front')
             }
         } catch (error) {
             console.error('登录失败:', error);
@@ -56,9 +56,8 @@ export default function LoginForm() {
                         name="password"
                         rules={[{ required: true, message: '请输入密码' }]}
                     >
-                        <Input type="password" placeholder="请输入密码" />
+                        <Input.Password placeholder="请输入密码" />
                     </Form.Item>
-
                     <Form.Item>
                         <Button block type="primary" htmlType="submit" className='my-5'>
                             登录账户

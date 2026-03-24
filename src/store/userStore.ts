@@ -8,9 +8,15 @@ interface UserStoreState {
     clearUserInfo: () => void;
 }
 export const useUserStore = create<UserStoreState>((set) => ({
-    userInfo: localStorage.getItem('userInfo')
-        ? JSON.parse(localStorage.getItem('userInfo')!)
-        : null,
+    userInfo: (() => {
+        try {
+            const stored = localStorage.getItem('userInfo');
+            return stored ? JSON.parse(stored) : null;
+        } catch (error) {
+            console.error('Failed to parse userInfo from localStorage:', error);
+            return null;
+        }
+    })(),
     token: localStorage.getItem('token') || null,
     roleType: localStorage.getItem('roleType') || null,
     // 设置完整用户信息
@@ -18,7 +24,7 @@ export const useUserStore = create<UserStoreState>((set) => ({
         localStorage.setItem('userInfo', JSON.stringify(userInfo));
         localStorage.setItem('token', token);
         localStorage.setItem('roleType', roleType)
-        set({ userInfo, token });
+        set({ userInfo, token, roleType });
     },
     // 清空用户信息
     clearUserInfo: () => {
