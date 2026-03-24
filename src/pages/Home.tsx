@@ -1,38 +1,61 @@
-import { Button, Layout } from "antd";
+import { Button, Layout, message } from "antd";
 import { Content, Footer, Header } from "antd/es/layout/layout";
 import AgentIcon from "../assets/agent3.png"
-import AgentImg from "../assets/agent2.png"
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Outlet, useNavigate } from "react-router-dom";
+import { useUserStore } from "../store/userStore";
+import { logout } from "../apis/user";
 
 export default function Home() {
-    const navigate = useNavigate()
+    const userInfo = useUserStore(state => state.userInfo);
+    const roleType = useUserStore(state => state.roleType);
+    const clearUserInfo = useUserStore(state => state.clearUserInfo);
+    const navigate = useNavigate();
+    // 退出登录
+    const handleLogout = async () => {
+        try {
+            const res = await logout()
+            clearUserInfo()
+            message.success(res.data);
+            // 延迟跳转，确保提示显示
+            setTimeout(() => {
+                navigate('/auth');
+            }, 1000);
+        } catch (error) {
+            message.error((error as Error).message)
+            console.error(error)
+        }
+    };
+
     return (
-        <Layout className="h-screen">
+        <Layout className="min-h-screen">
             <Header className="bg-white h-12 flex items-center justify-between">
                 <div className="flex items-center gap-3 mx-10">
                     <img src={AgentIcon} alt="" />
                     <span className="font-medium">心理健康AI助手</span>
                 </div>
                 <div className="flex items-center gap-5 mx-10">
-                    <Link to={'/home'}>首页</Link>
-                    <Link to={'/home'}>知识库</Link>
-                    <Link to={'/auth/login'}>登录</Link>
-                    <Button type="primary" size="small" onClick={() => { navigate('/auth/register') }}>注册</Button>
+                    <Link to={'/'}>首页</Link>
+
+                    {userInfo && roleType === '1' ? (
+                        <>
+                            <Link to={'/consultation'}>AI咨询</Link>
+                            <Link to={'/diary'}>情绪日记</Link>
+                            <Link to={'/'}>知识库</Link>
+                            <Button type="default" size="small" onClick={handleLogout}>退出登录</Button>
+                        </>
+                    ) : (
+                        <>
+                            <Link to={'/'}>知识库</Link>
+                            <Link to={'/auth/login'}>登录</Link>
+                            <Button type="primary" size="small" onClick={() => { navigate('/auth/register') }}>注册</Button>
+                        </>
+                    )}
                 </div>
             </Header>
-            <Content className="bg-[#589081] h-auto flex items-center justify-center gap-10">
-                <div className="flex flex-col gap-5">
-                    <div className="text-white text-4xl font-bold">一次温暖的对话</div>
-                    <div className="text-yellow-300 text-4xl font-bold">化孤独为慰藉</div>
-                    <div className="text-white w-[440px]">每个深夜，每个焦虑的时刻，我们都在这里。不必独自承受，让心与心的连接温暖您的每一天</div>
-                    <div className="flex gap-3">
-                        <Button>开始倾话，获得陪伴</Button>
-                        <Button className="bg-[#589081] text-white">记录心情，释放情感</Button>
-                    </div>
-                </div>
-                <img src={AgentImg} alt="" />
+            <Content>
+                <Outlet />
             </Content>
-            <Footer className="flex items-center justify-center h-10 bg-[#202834] text-white">
+            <Footer className="flex items-center justify-center bg-[#202834] text-white h-10">
                 @2026 心理健康AI助手
             </Footer>
         </Layout >
