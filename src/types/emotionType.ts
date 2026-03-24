@@ -48,3 +48,13 @@ export interface aiDataType {
     improvementSuggestions: string[],
     timestamp: number
 }
+
+export interface diaryFormData {
+    diaryContent: string;
+    diaryDate: string;
+    dominantEmotion: string;
+    emotionTriggers: string;
+    moodScore: number;
+    sleepQuality: number;
+    stressLevel: number;
+}
