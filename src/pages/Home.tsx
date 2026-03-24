@@ -40,12 +40,12 @@ export default function Home() {
                         <>
                             <Link to={'/consultation'}>AI咨询</Link>
                             <Link to={'/diary'}>情绪日记</Link>
-                            <Link to={'/'}>知识库</Link>
+                            <Link to={'/knowledgeBase'}>知识库</Link>
                             <Button type="default" size="small" onClick={handleLogout}>退出登录</Button>
                         </>
                     ) : (
                         <>
-                            <Link to={'/'}>知识库</Link>
+                            <Link to={'/knowledgeBase'}>知识库</Link>
                             <Link to={'/auth/login'}>登录</Link>
                             <Button type="primary" size="small" onClick={() => { navigate('/auth/register') }}>注册</Button>
                         </>

@@ -1,4 +1,4 @@
-import type { addArticleType, articleData, articleParamsType, articleType, categoryType } from "../types/articleType"
+import type { addArticleType, articleData, articleGetParam, articleParamsType, articleType, categoryType } from "../types/articleType"
 import type { ApiResponse } from "../types/userType"
 import { request } from "../utils/request"
 // 获取文章分类
@@ -33,4 +33,14 @@ export const updateArticle = (id: string, params: addArticleType): Promise<ApiRe
 // 删除文章
 export const deleteArticle = (id: string): Promise<ApiResponse> => {
     return request.delete(`/knowledge/article/${id}`)
+}
+
+// 查询知识文章列表
+export const searchArticles = (params: articleGetParam): Promise<ApiResponse<articleData>> => {
+    return request.get('/knowledge/article/page', params)
+}
+
+// 获取知识文章详情
+export const getArticleDetail = (id: string): Promise<ApiResponse<articleType>> => {
+    return request.get(`/knowledge/article/${id}`)
 }

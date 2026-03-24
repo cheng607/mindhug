@@ -18,7 +18,6 @@ export interface articleParamsType {
     currentPage: string,
     size: string,
 }
-
 export interface articleType {
     id: string,
     categoryId: number,
@@ -54,4 +53,11 @@ export interface addArticleType {
     summary: string;
     tags: string;
     title: string;
+}
+
+export interface articleGetParam {
+    currentPage: string;
+    size: string;
+    sortDirection: string;
+    sortField: string;
 }

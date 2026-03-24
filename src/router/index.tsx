@@ -14,6 +14,8 @@ import { RequireAuth, RedirectIfAuth, RedirectAdminToBack } from "./RouteGuards"
 import Consultation from "../components/Consultation";
 import Diary from "../components/Diary";
 import Default from "../components/Default";
+import KnowledgeBase from "../components/KnowledgeBase";
+import Article from "../components/Article";
 
 const userRoutes = {
     path: '/user',
@@ -60,8 +62,10 @@ const router = createBrowserRouter([
             { path: '', element: <Default /> },
             { path: 'consultation', element: <Consultation /> },
             { path: 'diary', element: <Diary /> },
+            { path: 'knowledgeBase', element: <KnowledgeBase /> },
         ]
     },
+    { path: 'article/:id', element: <Article /> },
     userRoutes,
     authRoutes,
     backRoutes,
