@@ -5,10 +5,11 @@ import type {
     AxiosRequestConfig
 } from 'axios';
 import type { ApiResponse } from '../types/userType';
+import { apiBaseUrl } from '../config';
 
 // 1. 创建 Axios 实例
 const service: AxiosInstance = axios.create({
-    baseURL: '/api',
+    baseURL: apiBaseUrl,
     timeout: 30000,
     withCredentials: true
 });
@@ -36,12 +37,14 @@ service.interceptors.request.use(
 service.interceptors.response.use(
     (response) => response,
     (error: AxiosError) => {
-        const errMsg =
-            ((error.response?.data as Record<string, unknown>)?.msg as string) ||
-            error.message ||
-            '服务器异常';
+        const data = error.response?.data as ApiResponse | undefined;
+        if (data?.code === '401') {
+            localStorage.removeItem('token');
+            window.location.href = '/auth';
+        }
+        const errMsg = data?.msg || error.message || '服务器异常';
         console.error('Network Error:', errMsg);
-        return Promise.reject(error);
+        return Promise.reject(new Error(errMsg));
     }
 );
 

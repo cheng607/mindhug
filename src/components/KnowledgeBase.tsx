@@ -4,6 +4,7 @@ import type { articleType } from '../types/articleType';
 import { searchArticles } from '../apis/article';
 import { UserOutlined, ContainerOutlined, FireOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { fileBaseUrl } from '../config';
 
 export default function KnowledgeBase() {
     const [list, setList] = useState<articleType[]>([])
@@ -56,7 +57,7 @@ export default function KnowledgeBase() {
                 <div className='p-8 w-4/5 flex flex-col gap-3'>
                     {list.map(item => (
                         <div key={item.id} className='flex gap-3 bg-white p-3 rounded-md cursor-pointer' onClick={() => { handleClick(item.id) }}>
-                            <img src={`http://159.75.169.224:1235${item.coverImage}`} className='w-52 h-36' />
+                            <img src={`${fileBaseUrl}${item.coverImage}`} className='w-52 h-36' />
                             <div className='flex flex-col gap-2'>
                                 <div className='flex items-center gap-3 mb-2'>
                                     <div className='text-lg font-semibold'>{item.title}</div>

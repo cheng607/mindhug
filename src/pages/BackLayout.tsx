@@ -13,6 +13,7 @@ import AgentIcon from '../assets/agent.png'
 import { useUserStore } from '../store/userStore';
 import { logout } from '../apis/user';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { fileBaseUrl } from '../config';
 const { Header, Sider, Content } = Layout;
 function BackLayout() {
     const [collapsed, setCollapsed] = useState(false);
@@ -147,7 +148,10 @@ function BackLayout() {
                         >
                             <a onClick={(e) => e.preventDefault()}>
                                 <Space>
-                                    <Avatar src={`http://159.75.169.224:1235/api${userInfo?.avatar}`} />
+                                    <Avatar
+                                        icon={!userInfo?.avatar ? <UserOutlined /> : undefined}
+                                        src={userInfo?.avatar ? `${fileBaseUrl}/api${userInfo.avatar}` : undefined}
+                                    />
                                 </Space>
                             </a>
                         </Dropdown>
