@@ -1,0 +1,87 @@
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from app.api.user import router as user_router
+from app.core.config import settings
+from app.core.database import Base, SessionLocal, engine
+from app.models.role import Role
+
+
+def seed_roles() -> None:
+    db = SessionLocal()
+    try:
+        defaults = [
+            {"name": "user", "code": 1, "description": "普通用户"},
+            {"name": "admin", "code": 2, "description": "管理员"},
+        ]
+        for item in defaults:
+            exists = db.query(Role).filter(Role.code == item["code"]).first()
+            if not exists:
+                db.add(Role(**item))
+        db.commit()
+    finally:
+        db.close()
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    seed_roles()
+    yield
+
+
+app = FastAPI(title=settings.APP_NAME, lifespan=lifespan)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(_request: Request, exc: RequestValidationError):
+    errors = exc.errors()
+    msg = errors[0].get("msg", "参数校验失败") if errors else "参数校验失败"
+    return JSONResponse(
+        status_code=422,
+        content={"code": "422", "data": None, "msg": msg, "success": False},
+    )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(_request: Request, exc: HTTPException):
+    detail = exc.detail
+    if isinstance(detail, dict) and "code" in detail:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "code": detail.get("code", str(exc.status_code)),
+                "data": None,
+                "msg": detail.get("msg", "请求失败"),
+                "success": False,
+            },
+        )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "code": str(exc.status_code),
+            "data": None,
+            "msg": str(detail),
+            "success": False,
+        },
+    )
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(user_router, prefix="/api")
+
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
