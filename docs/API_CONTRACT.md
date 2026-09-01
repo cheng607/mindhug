@@ -115,22 +115,116 @@ token: <jwt_token>
 
 ---
 
-## Sprint 2+ 待实现
+## Sprint 2 已实现
 
-### 会话模块（Sprint 2）
+| 模块 | 方法 | 路径 | 认证 | 状态 | 说明 |
+|------|------|------|------|------|------|
+| 会话 | GET | `/api/psychological-chat/sessions` | 是 | ✅ 已实现 | 分页查询会话列表 |
+| 会话 | POST | `/api/psychological-chat/session/start` | 是 | ✅ 已实现 | 创建新会话 |
+| 会话 | GET | `/api/psychological-chat/sessions/{id}/messages` | 是 | ✅ 已实现 | 获取消息历史 |
+| 会话 | DELETE | `/api/psychological-chat/sessions/{id}` | 是 | ✅ 已实现 | 删除会话 |
+| 会话 | POST | `/api/psychological-chat/stream` | 是 | ✅ 已实现 | SSE 流式对话（mock） |
+| 会话 | GET | `/api/psychological-chat/session/{id}/emotion` | 是 | ✅ 已实现 | 情绪分析（mock） |
 
-| 方法 | 路径 | 认证 | 前端文件 | 响应类型 |
-|------|------|------|---------|---------|
-| GET | `/api/psychological-chat/sessions` | 是 | `sessions.ts` | `sessionData` / `sessionListType` |
-| POST | `/api/psychological-chat/session/start` | 是 | `sessions.ts` | `newChatResponseType` |
-| GET | `/api/psychological-chat/sessions/{id}/messages` | 是 | `sessions.ts` | `sessionDetailType[]` |
-| DELETE | `/api/psychological-chat/sessions/{id}` | 是 | `sessions.ts` | `null` |
-| POST | `/api/psychological-chat/stream` | 是 | `sessions.ts` | SSE 流式 |
-| GET | `/api/psychological-chat/session/{id}/emotion` | 是 | `sessions.ts` | `emotionAnalysType` |
+### GET `/api/psychological-chat/sessions`
 
-> 注意：前端 `streamChat` 调用路径为 `/api/psychological-chat/stream`（含双重 `/api` 前缀），Sprint 2 需统一修正。
+**Query 参数**（兼容两种命名）：
 
-### 情绪日记（Sprint 3）
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| pageNum / currentPage | string | 页码，默认 1 |
+| pageSize / size | string | 每页条数，默认 20 |
+| emotionTag | string | 可选，按情绪标签筛选 |
+
+**响应 data**（`sessionListType` / `sessionData`）：
+
+```json
+{
+  "records": [
+    {
+      "id": 1,
+      "sessionTitle": "新会话",
+      "userId": 1,
+      "userNickname": "测试用户",
+      "startedAt": "2026-09-01T12:00:00+00:00",
+      "lastMessageTime": "2026-09-01T12:05:00+00:00",
+      "lastMessageContent": "你好",
+      "messageCount": 2,
+      "durationMinutes": 5
+    }
+  ],
+  "total": 1,
+  "size": 20,
+  "current": 1,
+  "pages": 1
+}
+```
+
+### POST `/api/psychological-chat/session/start`
+
+**请求体**（`newChatParam`）：
+
+```json
+{
+  "sessionTitle": "新会话",
+  "initialMessage": ""
+}
+```
+
+**响应 data**（`newChatResponseType`）：
+
+```json
+{
+  "sessionId": "1",
+  "status": "ACTIVE",
+  "startTime": 1756713600000,
+  "expiryTime": 1757318400000,
+  "initialMessage": "",
+  "messageCount": 0,
+  "userHash": 1
+}
+```
+
+> `sessionId` 支持纯数字（`"1"`）或带前缀（`session_1`），情绪与流式接口均兼容。
+
+### GET `/api/psychological-chat/sessions/{id}/messages`
+
+**响应 data**：`sessionDetailType[]`
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| senderType | number | 1=用户，2=AI |
+| messageType | number | 1=文本 |
+| contentPreview | string | 内容前 50 字 |
+
+### POST `/api/psychological-chat/stream`
+
+**请求体**：
+
+```json
+{
+  "sessionId": "1",
+  "userMessage": "最近压力很大"
+}
+```
+
+**响应**：`text/event-stream`，每行格式 `data: {...}`
+
+```json
+{"content": "我能感受到"}
+```
+
+结束标记：`data: [DONE]`
+
+> Sprint 2 为 mock 流式回复，会自动持久化用户消息与 AI 回复。
+
+### GET `/api/psychological-chat/session/{id}/emotion`
+
+**响应 data**（`emotionAnalysType`）：基于最近用户消息的关键词 mock 分析。
+
+---
+
+## Sprint 3+ 待实现
 
 | 方法 | 路径 | 认证 | 前端文件 | 响应类型 |
 |------|------|------|---------|---------|
@@ -202,6 +296,32 @@ token: <jwt_token>
 | status | int | 1=正常，0=禁用 |
 | created_at | timestamptz | 创建时间 |
 | updated_at | timestamptz | 更新时间 |
+
+### chat_sessions 表（Sprint 2）
+
+| 列 | 类型 | 说明 |
+|----|------|------|
+| id | int PK | 自增 |
+| user_id | int FK → users.id | 所属用户 |
+| session_title | varchar(200) | 会话标题 |
+| status | varchar(20) | ACTIVE 等 |
+| emotion_tag | varchar(50) | 情绪标签（可选） |
+| last_message_content | text | 最后一条消息 |
+| last_message_time | timestamptz | 最后消息时间 |
+| message_count | int | 消息总数 |
+| started_at | timestamptz | 开始时间 |
+| updated_at | timestamptz | 更新时间 |
+
+### messages 表（Sprint 2）
+
+| 列 | 类型 | 说明 |
+|----|------|------|
+| id | int PK | 自增 |
+| session_id | int FK → chat_sessions.id | 所属会话 |
+| content | text | 消息内容 |
+| sender_type | int | 1=用户，2=AI |
+| message_type | int | 1=文本 |
+| created_at | timestamptz | 创建时间 |
 
 ---
 

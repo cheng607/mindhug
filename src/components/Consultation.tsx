@@ -12,7 +12,7 @@ import { createChat, deleteSession, getAnalysisResult, getSessionDetail, getSess
 import type { emotionAnalysType, newChatParam, sessionDetailType, sessionItemType } from '../types/sessionsType'
 import { FieldTimeOutlined, MessageOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons'
 import { fetchEventSource } from '@microsoft/fetch-event-source'
-import { formatDate } from '../utils'
+import { formatDate, normalizeSessionId } from '../utils'
 
 export default function Consultation() {
     const [isDisabled, setIsDisabled] = useState(false)
@@ -123,6 +123,12 @@ export default function Consultation() {
         } catch (error) {
             console.error('获取会话列表失败:', error)
             setList([])
+            const errMsg = (error as Error).message || ''
+            if (errMsg.includes('未登录') || errMsg.includes('登录')) {
+                message.warning('请先登录')
+            } else if (errMsg) {
+                message.error(errMsg)
+            }
         }
     }
 
@@ -180,6 +186,19 @@ export default function Consultation() {
 
                     try {
                         const payload = JSON.parse(event.data)
+                        if (payload.error) {
+                            message.error(payload.error)
+                            setIsAiTyping(false)
+                            setChatList(prev => {
+                                const newList = [...prev]
+                                const last = newList[newList.length - 1]
+                                if (last?.senderType === 2 && !last.content?.trim()) {
+                                    newList.pop()
+                                }
+                                return newList
+                            })
+                            return
+                        }
                         const chunk = payload.content ?? payload.data?.content
                         if (typeof chunk === 'string' && chunk.length > 0) {
                             setChatList(prev => {
@@ -248,7 +267,7 @@ export default function Consultation() {
             // 如果没有当前会话，先创建新会话
             let sessionId = currentSession?.sessionId
             if (!sessionId) {
-                const res = await createChat({ initialMessage: messageContent, sessionTitle: `小暖同学_${new Date().getTime()}` })
+                const res = await createChat({ initialMessage: '', sessionTitle: `小暖同学_${new Date().getTime()}` })
                 if (res && res.data) {
                     sessionId = res.data.sessionId
                     setCurrentSession(res.data)
@@ -323,9 +342,10 @@ export default function Consultation() {
             message.success('删除成功')
 
             // 如果删除的是当前会话，清空聊天记录
-            if (currentSession?.sessionId === sessionId) {
+            if (normalizeSessionId(currentSession?.sessionId) === normalizeSessionId(sessionId)) {
                 setCurrentSession(undefined)
                 setChatList([])
+                setCurrentEmotion(undefined)
             }
 
             // 刷新会话列表
@@ -344,17 +364,16 @@ export default function Consultation() {
         }
 
         setIsAiTyping(false)
+        setChatList([])
+        setCurrentEmotion(undefined)
         await createNewSession()
         await getSessionsList()
     }
 
     // 处理情绪分析
     const getEmotion = async (sessionId: string) => {
-        if (!sessionId.includes('session')) {
-            sessionId = 'session_' + sessionId
-        }
         try {
-            const res = await getAnalysisResult(sessionId)
+            const res = await getAnalysisResult(normalizeSessionId(sessionId))
             setCurrentEmotion(res.data)
         } catch (error) {
             console.error('获取分析结果失败:', error)
@@ -391,7 +410,7 @@ export default function Consultation() {
                     </div>
                     <div className='text-amber-800'>治愈小行动</div>
                     <div className='flex flex-col gap-3'>
-                        {currentEmotion?.improvementSuggestions.map((suggestion, index) => (
+                        {(currentEmotion?.improvementSuggestions ?? []).map((suggestion, index) => (
                             <div key={index} className='bg-white rounded-xl flex items-center p-3 w-56 gap-3'>
                                 <div className='bg-yellow-400 w-1.5 h-1.5 rounded-full'></div>
                                 <div>{suggestion}</div>

@@ -5,6 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.api.sessions import router as sessions_router
 from app.api.user import router as user_router
 from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
@@ -80,6 +81,7 @@ app.add_middleware(
 )
 
 app.include_router(user_router, prefix="/api")
+app.include_router(sessions_router, prefix="/api")
 
 
 @app.get("/health")

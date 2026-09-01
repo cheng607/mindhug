@@ -60,8 +60,8 @@ const router = createBrowserRouter([
         ),
         children: [
             { path: '', element: <Default /> },
-            { path: 'consultation', element: <Consultation /> },
-            { path: 'diary', element: <Diary /> },
+            { path: 'consultation', element: <RequireAuth><Consultation /></RequireAuth> },
+            { path: 'diary', element: <RequireAuth><Diary /></RequireAuth> },
             { path: 'knowledgeBase', element: <KnowledgeBase /> },
         ]
     },

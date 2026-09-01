@@ -27,9 +27,9 @@ export const deleteSession = (sessionId: string): Promise<ApiResponse<null>> => 
     return request.delete(`/psychological-chat/sessions/${sessionId}`)
 }
 
-// 流式对话接口
+// 流式对话接口（Consultation 组件直接使用 fetchEventSource，此处保留供其他场景）
 export const streamChat = (params: { sessionId: string, userMessage: string }): Promise<ApiResponse> => {
-    return request.post('/api/psychological-chat/stream', params)
+    return request.post('/psychological-chat/stream', params)
 }
 
 // 获取分析结果

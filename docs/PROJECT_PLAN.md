@@ -490,11 +490,11 @@ Week 3: 部署与工程化
 
 #### Sprint 2（W3–W4）：会话核心
 
-- [ ] 数据库模型：Session, Message
-- [ ] 会话 CRUD API（对齐现有前端 types）
-- [ ] SSE 流式接口（mock 响应）
-- [ ] 前端 `Consultation.tsx` 对接新后端联调
-- [ ] 消息历史加载验证
+- [x] 数据库模型：Session, Message
+- [x] 会话 CRUD API（对齐现有前端 types）
+- [x] SSE 流式接口（mock 响应）
+- [x] 前端 `Consultation.tsx` 对接新后端联调
+- [x] 消息历史加载验证
 
 #### Sprint 3（W5–W6）：业务模块
 

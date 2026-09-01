@@ -29,3 +29,7 @@ export const formatDate = (dateString: string): string => {
     // 拼接所有非0部分
     return parts.join('');
 };
+
+/** 统一会话 ID 格式，去除 session_ 前缀 */
+export const normalizeSessionId = (id: string | number | undefined): string =>
+    String(id ?? '').replace(/^session_/, '');
