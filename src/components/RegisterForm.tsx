@@ -17,7 +17,8 @@ export default function RegisterForm() {
                 }, 1000);
             }
         } catch (error) {
-            console.error('登录失败:', error);
+            message.error((error as Error).message || '注册失败，请重试');
+            console.error('注册失败:', error);
         }
     };
     return (
@@ -30,8 +31,8 @@ export default function RegisterForm() {
                     remember: true,
                     userType: 1,
                     gender: 1,
-                    phone: ' ',
-                    nickname: ' '
+                    phone: '',
+                    nickname: ''
                 }}
                 onFinish={onFinish}
                 className='flex flex-col'

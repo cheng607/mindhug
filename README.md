@@ -24,16 +24,55 @@ MindHug 目标是搭建完整的心理健康服务平台：
 
 ## 2. 快速启动
 
+### 2.1 全栈本地开发（推荐）
+
+**前置条件**：Docker Desktop 已启动
+
+```bash
+# 1. 启动 PostgreSQL + Redis + 后端
+docker compose -f docker-compose.dev.yml up -d
+
+# 2. 验证后端
+curl http://localhost:8000/health
+
+# 3. 启动前端
+npm install
+npm run dev
+```
+
+前端默认地址：http://localhost:5173  
+后端 API 文档：http://localhost:8000/docs
+
+### 2.2 仅前端开发
+
 ```bash
 git clone <repo-url> mindHug
 cd mindHug
 npm install
-```
-
-开发
-```bash
 npm run dev
 ```
+
+前端通过 Vite 代理将 `/api` 转发到 `VITE_API_PROXY_TARGET`（默认 `http://localhost:8000`）。
+
+### 2.3 仅后端开发
+
+```bash
+cd backend
+cp .env.example .env
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+### 2.4 环境变量
+
+复制 `.env.example` 为 `.env.development`（前端）或 `backend/.env`（后端）：
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `VITE_API_BASE_URL` | 前端 API 前缀 | `/api` |
+| `VITE_API_PROXY_TARGET` | Vite 开发代理目标 | `http://localhost:8000` |
+| `VITE_FILE_BASE_URL` | 静态资源地址 | `http://localhost:8000` |
+| `DATABASE_URL` | PostgreSQL 连接串 | 见 `backend/.env.example` |
 
 构建
 ```bash
@@ -44,6 +83,14 @@ npm run preview
 代码检查
 ```bash
 npm run lint
+```
+
+### 2.5 后端测试
+
+```bash
+cd backend
+pip install -r requirements.txt -r requirements-dev.txt
+pytest tests/test_sprint1_api.py -v
 ```
 
 ## 3. 目录结构
@@ -105,7 +152,8 @@ npm run lint
 
 ### 5.1 src/config/index.ts
 
-- `fileBaseUrl`：静态资源地址（示例 `http://159.75.169.224:1235`）
+- `apiBaseUrl`：API 前缀，来自 `VITE_API_BASE_URL`（默认 `/api`）
+- `fileBaseUrl`：静态资源地址，来自 `VITE_FILE_BASE_URL`
 
 ### 5.2 src/utils/request.ts
 
@@ -123,8 +171,7 @@ npm run lint
 
 ## 7. 建议优化
 
-- 增加 `.env` 或 `VITE_` 环境变量支持
-- 补充单元测试与 E2E 测试
+- 补充 E2E 测试
 - 设计组件拆分，避免冗长组件
 - 规范 API 类型（`ApiResponse<T>` 等）
 - 加 `error boundary` 及全局 loading 组件

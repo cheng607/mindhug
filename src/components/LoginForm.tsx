@@ -1,4 +1,4 @@
-import { Button, Form, Input } from 'antd';
+import { Button, Form, Input, message } from 'antd';
 import type { LoginParams } from '../types/userType';
 import { login } from '../apis/user';
 import { Link, useNavigate } from 'react-router-dom';
@@ -23,9 +23,10 @@ export default function LoginForm() {
             if (res.data.roleType == '2') {
                 navigate('/back')
             } else if (res.data.roleType == '1') {
-                navigate('/front')
+                navigate('/')
             }
         } catch (error) {
+            message.error((error as Error).message || '登录失败，请重试');
             console.error('登录失败:', error);
         }
     };
