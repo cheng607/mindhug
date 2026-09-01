@@ -481,12 +481,12 @@ Week 3: 部署与工程化
 
 #### Sprint 1（W1–W2）：地基
 
-- [ ] 创建 `backend/` 后端目录（或 monorepo）
-- [ ] FastAPI 项目初始化 + Docker Compose（PG + Redis）
-- [ ] 数据库模型：User, Role
-- [ ] JWT 认证：login / register / logout
-- [ ] 前端：引入 `.env`，移除硬编码 IP
-- [ ] 编写接口对照表文档
+- [x] 创建 `backend/` 后端目录（或 monorepo）
+- [x] FastAPI 项目初始化 + Docker Compose（PG + Redis）
+- [x] 数据库模型：User, Role
+- [x] JWT 认证：login / register / logout
+- [x] 前端：引入 `.env`，移除硬编码 IP
+- [x] 编写接口对照表文档
 
 #### Sprint 2（W3–W4）：会话核心
 
@@ -506,29 +506,29 @@ Week 3: 部署与工程化
 
 #### Sprint 4（W7–W8）：前端重构
 
-- [ ] `Consultation.tsx` 拆分为 5+ 子组件
-- [ ] 抽取 `useChatStream` hook
-- [ ] 首页 CTA 跳转修复
-- [ ] 个人中心页面（基础版）
-- [ ] ErrorBoundary + 全局 Loading
-- [ ] 管理端全部页面对接新后端
+- [x] `Consultation.tsx` 拆分为 5+ 子组件
+- [x] 抽取 `useChatStream` hook
+- [x] 首页 CTA 跳转修复
+- [x] 个人中心页面（基础版）
+- [x] ErrorBoundary + 全局 Loading
+- [x] 管理端全部页面对接新后端
 
 #### Sprint 5（W9–W10）：AI 单 Agent
 
-- [ ] LLM 调用层封装（DeepSeek / 通义）
-- [ ] 心理咨询 System Prompt 设计与迭代
-- [ ] SSE 真实流式输出
-- [ ] 上下文管理（滑动窗口）
-- [ ] 情绪分析 Pipeline（结构化输出）
-- [ ] 日记 AI 分析（异步任务）
+- [x] LLM 调用层封装（DeepSeek / 通义）
+- [x] 心理咨询 System Prompt 设计与迭代
+- [x] SSE 真实流式输出
+- [x] 上下文管理（滑动窗口）
+- [x] 情绪分析 Pipeline（结构化输出）
+- [x] 日记 AI 分析（异步任务）
 
 #### Sprint 6（W11–W12）：多 Agent 基础
 
-- [ ] LangGraph 状态机搭建
-- [ ] Router Agent（意图分类：倾诉/咨询/危机/知识）
-- [ ] 倾听 Agent + 咨询 Agent 实现
-- [ ] 危机 Agent（关键词规则 + LLM 检测）
-- [ ] Agent 执行日志
+- [x] LangGraph 状态机搭建
+- [x] Router Agent（意图分类：倾诉/咨询/危机/知识）
+- [x] 倾听 Agent + 咨询 Agent 实现
+- [x] 危机 Agent（关键词规则 + LLM 检测）
+- [x] Agent 执行日志
 
 #### Sprint 7（W13–W14）：RAG + 管理增强
 
