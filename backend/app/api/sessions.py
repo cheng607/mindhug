@@ -7,7 +7,9 @@ from app.core.deps import get_current_user
 from app.core.response import error_response, success_response
 from app.models.user import User
 from app.schemas.session import StartSessionRequest, StreamChatRequest
-from app.services.session_service import SessionService, parse_session_id, stream_mock_chat
+from app.services.session_service import SessionService, parse_session_id
+from app.services.chat_service import stream_chat as chat_stream_generator
+from app.services.emotion_service import analyze_session_emotion
 
 router = APIRouter(prefix="/psychological-chat", tags=["psychological-chat"])
 
@@ -112,7 +114,7 @@ async def stream_chat(
     if not service.session_exists_for_user(sid, current_user):
         return error_response("404", "会话不存在或无权访问", status_code=404)
 
-    generator = stream_mock_chat(db, current_user, sid, payload.userMessage)
+    generator = chat_stream_generator(db, current_user, sid, payload.userMessage)
     return StreamingResponse(
         generator,
         media_type="text/event-stream",
@@ -125,7 +127,7 @@ async def stream_chat(
 
 
 @router.get("/session/{session_id}/emotion")
-def get_session_emotion(
+async def get_session_emotion(
     session_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -135,7 +137,8 @@ def get_session_emotion(
     if err:
         return err
     try:
-        data = service.get_emotion_analysis(sid, current_user)
+        content = service.get_session_user_content(sid, current_user)
+        data = await analyze_session_emotion(content)
     except ValueError as exc:
         return error_response("404", str(exc), status_code=404)
     return success_response(data=data.model_dump(), msg="查询成功")

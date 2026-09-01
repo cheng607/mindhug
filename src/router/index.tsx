@@ -16,6 +16,7 @@ import Diary from "../components/Diary";
 import Default from "../components/Default";
 import KnowledgeBase from "../components/KnowledgeBase";
 import Article from "../components/Article";
+import Profile from "../pages/Profile";
 
 const userRoutes = {
     path: '/user',
@@ -63,6 +64,7 @@ const router = createBrowserRouter([
             { path: 'consultation', element: <RequireAuth><Consultation /></RequireAuth> },
             { path: 'diary', element: <RequireAuth><Diary /></RequireAuth> },
             { path: 'knowledgeBase', element: <KnowledgeBase /> },
+            { path: 'profile', element: <RequireAuth><Profile /></RequireAuth> },
         ]
     },
     { path: 'article/:id', element: <Article /> },

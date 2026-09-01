@@ -35,6 +35,9 @@ class ChatSession(Base):
     messages: Mapped[list["Message"]] = relationship(
         "Message", back_populates="session", cascade="all, delete-orphan"
     )
+    agent_logs: Mapped[list["AgentExecutionLog"]] = relationship(
+        "AgentExecutionLog", back_populates="session", cascade="all, delete-orphan"
+    )
 
     @property
     def duration_minutes(self) -> int:

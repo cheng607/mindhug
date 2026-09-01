@@ -6,6 +6,12 @@ import type {
 } from 'axios';
 import type { ApiResponse } from '../types/userType';
 import { apiBaseUrl } from '../config';
+import { useLoadingStore } from '../store/loadingStore';
+
+const SKIP_LOADING_URLS = ['/psychological-chat/stream'];
+
+const shouldSkipLoading = (url?: string) =>
+    SKIP_LOADING_URLS.some(path => url?.includes(path));
 
 // 1. 创建 Axios 实例
 const service: AxiosInstance = axios.create({
@@ -17,6 +23,9 @@ const service: AxiosInstance = axios.create({
 // 2. 请求拦截器
 service.interceptors.request.use(
     (config) => {
+        if (!shouldSkipLoading(config.url)) {
+            useLoadingStore.getState().setLoading(true);
+        }
         const token = localStorage.getItem('token');
         if (token) {
             config.headers['token'] = token;
@@ -35,8 +44,16 @@ service.interceptors.request.use(
 
 // 3. 响应拦截器仅处理网络/HTTP错误
 service.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        if (!shouldSkipLoading(response.config.url)) {
+            useLoadingStore.getState().setLoading(false);
+        }
+        return response;
+    },
     (error: AxiosError) => {
+        if (!shouldSkipLoading(error.config?.url)) {
+            useLoadingStore.getState().setLoading(false);
+        }
         const data = error.response?.data as ApiResponse | undefined;
         if (data?.code === '401') {
             localStorage.removeItem('token');

@@ -328,6 +328,7 @@ export default function Knowledge() {
                 categories={categories}
                 title={dialogTitle}
                 initialValues={currentArticle}
+                onSuccess={refreshList}
             />
 
         </div>

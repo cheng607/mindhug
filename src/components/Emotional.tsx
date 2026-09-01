@@ -1,8 +1,9 @@
-import { Button, Descriptions, Form, Input, Modal, Progress, Rate, Row, Select, Table } from "antd";
+import { Button, Descriptions, Form, Input, Modal, Progress, Rate, Row, Select, Table, message } from "antd";
 import type { TablePaginationConfig } from "antd/es/table";
 import { useEffect, useState, useCallback } from "react";
 import { deleteDiary, getDiary } from "../apis/emotion";
 import type { aiDataType, diaryParamType, diaryType } from "../types/emotionType";
+import { parseAiEmotionAnalysis } from "../utils/emotion";
 
 export default function Emotional() {
     const [form] = Form.useForm()
@@ -13,19 +14,7 @@ export default function Emotional() {
     const [pageSize, setPageSize] = useState(10);
     const [currentDiary, setCurrentDiary] = useState<diaryType>();
     const [visible, setVisible] = useState(false);
-    const [aiData, setAiData] = useState<aiDataType>({
-        primaryEmotion: '无分析数据',
-        emotionScore: 0,
-        isNegative: false,
-        riskLevel: 0,
-        keywords: [],
-        suggestion: '',
-        icon: '',
-        label: '',
-        riskDescription: '',
-        improvementSuggestions: [],
-        timestamp: 0
-    });
+    const [aiData, setAiData] = useState<aiDataType>(parseAiEmotionAnalysis(''));
 
     // 查询情绪日志
     const searchDiary = useCallback(async (params?: diaryParamType) => {
@@ -132,7 +121,7 @@ export default function Emotional() {
                     <Button type="link" onClick={() => {
                         setCurrentDiary(record);
                         setVisible(true);
-                        setAiData(JSON.parse(record.aiEmotionAnalysis))
+                        setAiData(parseAiEmotionAnalysis(record.aiEmotionAnalysis));
                     }}>详情</Button>
                     <Button type="link" danger onClick={() => { handleDelete(record.id.toString()) }}>删除</Button>
                 </>
@@ -164,10 +153,12 @@ export default function Emotional() {
     // 删除日志
     const handleDelete = async (id: string) => {
         try {
-            const res = await deleteDiary(id);
-            console.log(res)
+            await deleteDiary(id);
+            message.success('删除成功');
+            searchDiary({ currentPage: currentPage.toString(), size: pageSize.toString() });
         } catch (error) {
             console.error('删除失败', error);
+            message.error('删除失败，请重试');
         }
     }
     return (

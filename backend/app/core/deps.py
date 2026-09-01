@@ -31,3 +31,27 @@ def get_current_user(
         )
 
     return user
+
+
+def get_optional_user(
+    token: str | None = Header(None, alias="token"),
+    db: Session = Depends(get_db),
+) -> User | None:
+    if not token:
+        return None
+    user_id = decode_access_token(token)
+    if not user_id:
+        return None
+    user = db.query(User).filter(User.id == int(user_id)).first()
+    if not user or user.status != 1:
+        return None
+    return user
+
+
+def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.user_type != 2:
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "403", "msg": "需要管理员权限", "success": False},
+        )
+    return current_user

@@ -1,15 +1,22 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
+from app.api.analytics import router as analytics_router
+from app.api.diary import router as diary_router
+from app.api.files import router as files_router
+from app.api.knowledge import router as knowledge_router
 from app.api.sessions import router as sessions_router
 from app.api.user import router as user_router
 from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
 from app.models.role import Role
+from app.services.seed_service import seed_knowledge
 
 
 def seed_roles() -> None:
@@ -24,6 +31,7 @@ def seed_roles() -> None:
             if not exists:
                 db.add(Role(**item))
         db.commit()
+        seed_knowledge(db)
     finally:
         db.close()
 
@@ -80,8 +88,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+upload_path = Path(settings.UPLOAD_DIR)
+upload_path.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(upload_path)), name="uploads")
+
 app.include_router(user_router, prefix="/api")
 app.include_router(sessions_router, prefix="/api")
+app.include_router(diary_router, prefix="/api")
+app.include_router(knowledge_router, prefix="/api")
+app.include_router(files_router, prefix="/api")
+app.include_router(analytics_router, prefix="/api")
 
 
 @app.get("/health")

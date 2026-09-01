@@ -498,11 +498,11 @@ Week 3: 部署与工程化
 
 #### Sprint 3（W5–W6）：业务模块
 
-- [ ] 情绪日记 API（用户提交 + 管理端分页）
-- [ ] 知识库 API（分类树 + 文章 CRUD）
-- [ ] 文件上传（MinIO 或本地存储）
-- [ ] 数据统计 API（仪表盘数据）
-- [ ] 前端：Diary、KnowledgeBase、DashBoard 联调
+- [x] 情绪日记 API（用户提交 + 管理端分页）
+- [x] 知识库 API（分类树 + 文章 CRUD）
+- [x] 文件上传（MinIO 或本地存储）
+- [x] 数据统计 API（仪表盘数据）
+- [x] 前端：Diary、KnowledgeBase、DashBoard 联调
 
 #### Sprint 4（W7–W8）：前端重构
 

@@ -9,6 +9,7 @@ import { addArticle, updateArticle } from "../apis/article";// 定义弹窗接�
 interface ArticleDialogProps {
     visible: boolean; // 弹窗显隐状态
     onCancel: () => void; // 关闭弹窗回调
+    onSuccess?: () => void; // 保存成功回调
     categories: categoryType[]; // 分类列表
     title?: string; // 弹窗标题
     initialValues?: articleType; // 编辑时的初始值，可选
@@ -20,6 +21,7 @@ const { TextArea } = Input;
 export default function ArticleDialog({
     visible,
     onCancel,
+    onSuccess,
     categories,
     title = "新增文章",
     initialValues,
@@ -43,6 +45,7 @@ export default function ArticleDialog({
             }
 
             form.resetFields(); // 重置表单
+            onSuccess?.();
             onCancel(); // 关闭弹窗
         } catch (error) {
             console.error("保存文章失败：", error);

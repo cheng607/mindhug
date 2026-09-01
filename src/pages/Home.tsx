@@ -41,6 +41,7 @@ export default function Home() {
                             <Link to={'/consultation'}>AI咨询</Link>
                             <Link to={'/diary'}>情绪日记</Link>
                             <Link to={'/knowledgeBase'}>知识库</Link>
+                            <Link to={'/profile'}>个人中心</Link>
                             <Button type="default" size="small" onClick={handleLogout}>退出登录</Button>
                         </>
                     ) : (

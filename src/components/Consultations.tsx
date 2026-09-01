@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getSessionDetail, getSessions } from "../apis/sessions";
 import type { sessionDetailType, sessionType } from "../types/sessionsType";
-import { Button, Modal, Space, Table } from "antd";
+import { Button, Modal, Space, Table, message } from "antd";
 import type { TablePaginationConfig } from "antd/es/table";
 
 export default function Consultations() {
@@ -87,6 +87,7 @@ export default function Consultations() {
             setSessionList(res.data.records)
         } catch (error) {
             console.error('获取失败', error)
+            message.error((error as Error).message || '获取咨询记录失败')
         } finally {
             setLoading(false);
         }
@@ -110,6 +111,7 @@ export default function Consultations() {
             setVisible(true);
         } catch (error) {
             console.error(error)
+            message.error((error as Error).message || '获取会话详情失败')
         }
     }
     return (
@@ -129,7 +131,7 @@ export default function Consultations() {
                     total: total,
                 }}
                 onChange={handleTableChange}
-                locale={{ emptyText: "暂无文章数据" }}
+                locale={{ emptyText: "暂无咨询记录" }}
             />
             <Modal
                 title="咨询会话详情"

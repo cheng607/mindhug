@@ -1,0 +1,135 @@
+"""Sprint 6 multi-agent orchestration tests."""
+import json
+import os
+import uuid
+
+import pytest
+from fastapi.testclient import TestClient
+
+os.environ.setdefault("DATABASE_URL", "sqlite:///./test_sprint6.db")
+os.environ.setdefault("LLM_PROVIDER", "mock")
+
+from app.agents.router import classify_intent  # noqa: E402
+from app.core.database import Base, SessionLocal, engine  # noqa: E402
+from app.main import app  # noqa: E402
+from app.models.agent_execution_log import AgentExecutionLog  # noqa: E402
+from app.models.role import Role  # noqa: E402
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_database():
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    try:
+        for item in [
+            {"name": "user", "code": 1, "description": "普通用户"},
+            {"name": "admin", "code": 2, "description": "管理员"},
+        ]:
+            if not db.query(Role).filter(Role.code == item["code"]).first():
+                db.add(Role(**item))
+        db.commit()
+    finally:
+        db.close()
+    yield
+
+
+@pytest.fixture
+def client():
+    return TestClient(app, raise_server_exceptions=False)
+
+
+@pytest.fixture
+def auth_headers(client: TestClient):
+    suffix = uuid.uuid4().hex[:8]
+    payload = {
+        "username": f"s6_user_{suffix}",
+        "email": f"s6_{suffix}@example.com",
+        "password": "123456",
+        "confirmPassword": "123456",
+        "gender": 1,
+    }
+    client.post("/api/user/add", json=payload)
+    login_resp = client.post(
+        "/api/user/login",
+        json={"username": payload["username"], "password": payload["password"]},
+    )
+    token = login_resp.json()["data"]["token"]
+    return {"token": token}
+
+
+def test_router_crisis_intent():
+    assert classify_intent("我不想活了") == "crisis"
+
+
+def test_router_counsel_intent():
+    assert classify_intent("最近压力很大，有什么建议吗") == "counsel"
+
+
+def test_router_knowledge_intent():
+    assert classify_intent("什么是焦虑症") == "knowledge"
+
+
+def test_router_listen_intent():
+    assert classify_intent("今天心情不太好，想找人聊聊") == "listen"
+
+
+def test_stream_includes_agent_metadata(client: TestClient, auth_headers: dict):
+    create_resp = client.post(
+        "/api/psychological-chat/session/start",
+        headers=auth_headers,
+        json={"sessionTitle": "Agent测试"},
+    )
+    session_id = create_resp.json()["data"]["sessionId"]
+
+    agent_meta = None
+    with client.stream(
+        "POST",
+        "/api/psychological-chat/stream",
+        headers={**auth_headers, "Accept": "text/event-stream"},
+        json={"sessionId": session_id, "userMessage": "什么是焦虑症"},
+    ) as response:
+        assert response.status_code == 200
+        for line in response.iter_lines():
+            if not line.startswith("data: "):
+                continue
+            payload = line[6:]
+            if payload == "[DONE]":
+                break
+            data = json.loads(payload)
+            if "agent" in data:
+                agent_meta = data
+                break
+
+    assert agent_meta is not None
+    assert agent_meta["agent"] == "knowledge"
+    assert agent_meta["agentName"] == "知识 Agent"
+
+
+def test_agent_execution_log_created(client: TestClient, auth_headers: dict):
+    create_resp = client.post(
+        "/api/psychological-chat/session/start",
+        headers=auth_headers,
+        json={"sessionTitle": "日志测试"},
+    )
+    session_id = int(create_resp.json()["data"]["sessionId"])
+
+    with client.stream(
+        "POST",
+        "/api/psychological-chat/stream",
+        headers={**auth_headers, "Accept": "text/event-stream"},
+        json={"sessionId": str(session_id), "userMessage": "最近失眠怎么办"},
+    ) as response:
+        assert response.status_code == 200
+        for line in response.iter_lines():
+            if line.startswith("data: ") and line[6:] == "[DONE]":
+                break
+
+    db = SessionLocal()
+    try:
+        logs = db.query(AgentExecutionLog).filter(AgentExecutionLog.session_id == session_id).all()
+        assert len(logs) >= 1
+        assert logs[-1].intent == "counsel"
+        assert logs[-1].active_agent == "咨询 Agent"
+    finally:
+        db.close()

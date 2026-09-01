@@ -35,6 +35,9 @@ class User(Base):
     chat_sessions: Mapped[list["ChatSession"]] = relationship(
         "ChatSession", back_populates="user"
     )
+    emotion_diaries: Mapped[list["EmotionDiary"]] = relationship(
+        "EmotionDiary", back_populates="user"
+    )
 
     @property
     def user_type(self) -> int:

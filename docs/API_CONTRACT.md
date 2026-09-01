@@ -224,48 +224,86 @@ token: <jwt_token>
 
 ---
 
-## Sprint 3+ 待实现
+## Sprint 3 已实现
 
-| 方法 | 路径 | 认证 | 前端文件 | 响应类型 |
-|------|------|------|---------|---------|
-| POST | `/api/emotion-diary` | 是 | `emotion.ts` | - |
-| GET | `/api/emotion-diary/admin/page` | 是 | `emotion.ts` | `diaryData` |
-| DELETE | `/api/emotion-diary/admin/{id}` | 是 | `emotion.ts` | - |
+| 模块 | 方法 | 路径 | 认证 | 状态 | 说明 |
+|------|------|------|------|------|------|
+| 日记 | POST | `/api/emotion-diary` | 是 | ✅ 已实现 | 用户提交情绪日记，自动生成 mock AI 分析 |
+| 日记 | GET | `/api/emotion-diary/admin/page` | 管理员 | ✅ 已实现 | 管理端分页查询，支持 userId / 评分范围筛选 |
+| 日记 | DELETE | `/api/emotion-diary/admin/{id}` | 管理员 | ✅ 已实现 | 删除日记 |
+| 知识库 | GET | `/api/knowledge/category/tree` | 否 | ✅ 已实现 | 分类树（含文章数） |
+| 知识库 | GET | `/api/knowledge/article/page` | 否/是 | ✅ 已实现 | 文章分页；未登录仅看已发布 |
+| 知识库 | POST | `/api/knowledge/article` | 管理员 | ✅ 已实现 | 新增文章 |
+| 知识库 | GET | `/api/knowledge/article/{id}` | 否/是 | ✅ 已实现 | 文章详情（公开访问自动 +1 阅读） |
+| 知识库 | PUT | `/api/knowledge/article/{id}` | 管理员 | ✅ 已实现 | 更新文章 |
+| 知识库 | PUT | `/api/knowledge/article/{id}/status` | 管理员 | ✅ 已实现 | 发布/下线 |
+| 知识库 | DELETE | `/api/knowledge/article/{id}` | 管理员 | ✅ 已实现 | 删除文章 |
+| 统计 | GET | `/api/data-analytics/overview` | 管理员 | ✅ 已实现 | 仪表盘聚合数据 |
+| 文件 | POST | `/api/file/upload` | 是 | ✅ 已实现 | 本地存储，静态访问 `/uploads/*` |
 
-### 知识库（Sprint 3）
+### POST `/api/emotion-diary`
 
-| 方法 | 路径 | 认证 | 前端文件 | 响应类型 |
-|------|------|------|---------|---------|
-| GET | `/api/knowledge/category/tree` | 否/是 | `article.ts` | `categoryType[]` |
-| GET | `/api/knowledge/article/page` | 否/是 | `article.ts` | `articleData` |
-| POST | `/api/knowledge/article` | 是 | `article.ts` | - |
-| GET | `/api/knowledge/article/{id}` | 否/是 | `article.ts` | `articleType` |
-| PUT | `/api/knowledge/article/{id}` | 是 | `article.ts` | - |
-| PUT | `/api/knowledge/article/{id}/status` | 是 | `article.ts` | - |
-| DELETE | `/api/knowledge/article/{id}` | 是 | `article.ts` | - |
+**请求体**（`diaryFormData`）：
 
-### 数据统计（Sprint 3）
+```json
+{
+  "diaryContent": "今天心情不错",
+  "diaryDate": "2026-09-01",
+  "dominantEmotion": "happy",
+  "emotionTriggers": "完成了任务",
+  "moodScore": 8,
+  "sleepQuality": 4,
+  "stressLevel": 2
+}
+```
 
-| 方法 | 路径 | 认证 | 前端文件 | 响应类型 |
-|------|------|------|---------|---------|
-| GET | `/api/data-analytics/overview` | 是 | `analydata.ts` | `analyticsDataType` |
+提交后自动生成 mock `aiEmotionAnalysis` JSON，供管理端详情弹窗展示。
 
-### 文件上传（Sprint 3）
+### GET `/api/emotion-diary/admin/page`
 
-| 方法 | 路径 | 认证 | 前端文件 | 响应类型 |
-|------|------|------|---------|---------|
-| POST | `/api/file/upload` | 是 | `other.ts` | `uploadResponseType` |
+**Query 参数**：
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| currentPage | string | 页码，默认 1 |
+| size | string | 每页条数，默认 10 |
+| userId | string | 可选，按用户 ID 筛选 |
+| minMoodScore / maxMoodScore | string | 可选，情绪评分范围 |
+
+**响应 data**：`diaryData`（分页结构，records 为 `diaryType[]`）
+
+### GET `/api/knowledge/category/tree`
+
+**响应 data**：`categoryType[]`
+
+### GET `/api/knowledge/article/page`
+
+**Query 参数**（管理端 + 用户端通用）：
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| currentPage / size | string | 分页 |
+| title / categoryId / status / authorName | string | 筛选（管理端） |
+| sortField / sortDirection | string | 排序，如 `readCount` + `desc` |
+
+未登录或非管理员仅返回 `status=1`（已发布）文章。
+
+### POST `/api/file/upload`
 
 **请求**：`multipart/form-data`
 
 | 字段 | 说明 |
 |------|------|
-| file | 文件 |
+| file | 图片文件（≤5MB） |
 | businessType | 业务类型，如 `ARTICLE` |
 | businessId | 业务 ID |
 | businessField | 字段名，如 `cover` |
 
+**响应 data**：`uploadResponseType`，`filePath` 形如 `/uploads/{uuid}.png`
+
 ---
+
+## Sprint 4+ 待实现
 
 ## 数据库模型对照（Sprint 1）
 
@@ -322,6 +360,27 @@ token: <jwt_token>
 | sender_type | int | 1=用户，2=AI |
 | message_type | int | 1=文本 |
 | created_at | timestamptz | 创建时间 |
+
+### emotion_diaries 表（Sprint 3）
+
+| 列 | 类型 | 说明 |
+|----|------|------|
+| id | int PK | 自增 |
+| user_id | int FK → users.id | 所属用户 |
+| diary_content | text | 日记正文 |
+| diary_date | date | 记录日期 |
+| dominant_emotion | varchar(50) | 主要情绪 |
+| emotion_triggers | text | 情绪触发因素 |
+| mood_score | int | 情绪评分 1-10 |
+| sleep_quality | int | 睡眠质量 1-5 |
+| stress_level | int | 压力水平 1-5 |
+| ai_analysis_status | varchar(20) | PENDING / COMPLETED |
+| ai_emotion_analysis | text | AI 分析 JSON |
+| created_at / updated_at | timestamptz | 时间戳 |
+
+### knowledge_categories / knowledge_articles / uploaded_files 表（Sprint 3）
+
+见 Alembic 迁移 `003_sprint3_business_modules.py`。
 
 ---
 

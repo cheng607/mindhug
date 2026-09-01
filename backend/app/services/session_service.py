@@ -1,9 +1,5 @@
-import asyncio
-import json
 import math
 import re
-import time
-from collections.abc import AsyncGenerator
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import desc
@@ -13,7 +9,6 @@ from app.models.chat_session import SENDER_AI, SENDER_USER, ChatSession
 from app.models.message import Message
 from app.models.user import User
 from app.schemas.session import (
-    EmotionAnalysisResponse,
     MessageResponse,
     SessionItemResponse,
     SessionPageResponse,
@@ -206,7 +201,7 @@ class SessionService:
         self.db.refresh(message)
         return message
 
-    def get_emotion_analysis(self, session_id: int, user: User) -> EmotionAnalysisResponse:
+    def get_session_user_content(self, session_id: int, user: User) -> str:
         session = self._get_owned_session(session_id, user.id)
         if not session:
             raise ValueError("会话不存在或无权访问")
@@ -215,62 +210,10 @@ class SessionService:
             self.db.query(Message)
             .filter(Message.session_id == session_id, Message.sender_type == SENDER_USER)
             .order_by(Message.created_at.desc())
-            .limit(5)
+            .limit(10)
             .all()
         )
-        combined = " ".join(item.content for item in messages)
-
-        is_crisis = any(keyword in combined for keyword in CRISIS_KEYWORDS)
-        negative_words = ("压力", "焦虑", "失眠", "难过", "孤独", "抑郁", "害怕", "崩溃")
-        matched = [word for word in negative_words if word in combined]
-
-        if is_crisis:
-            return EmotionAnalysisResponse(
-                primaryEmotion="危机",
-                emotionScore=0.95,
-                isNegative=True,
-                riskLevel=3,
-                keywords=matched or ["求助"],
-                suggestion="你并不孤单，请立即联系心理援助热线 400-161-9995 或身边可信任的人。",
-                icon="🆘",
-                label="需要立即关注",
-                riskDescription="检测到高风险表达，建议尽快寻求专业帮助",
-                improvementSuggestions=[
-                    "拨打心理援助热线 400-161-9995",
-                    "联系家人或朋友陪伴",
-                    "前往最近的心理卫生中心",
-                ],
-                timestamp=int(time.time() * 1000),
-            )
-
-        if matched:
-            return EmotionAnalysisResponse(
-                primaryEmotion="焦虑",
-                emotionScore=0.72,
-                isNegative=True,
-                riskLevel=2,
-                keywords=matched[:3],
-                suggestion="建议尝试深呼吸放松，并记录今天发生的三件小事。",
-                icon="😟",
-                label="轻度焦虑",
-                riskDescription="检测到负面情绪，建议关注自身状态",
-                improvementSuggestions=["每天散步15分钟", "记录三件好事", "保证规律作息"],
-                timestamp=int(time.time() * 1000),
-            )
-
-        return EmotionAnalysisResponse(
-            primaryEmotion="平静",
-            emotionScore=0.35,
-            isNegative=False,
-            riskLevel=0,
-            keywords=["稳定"],
-            suggestion="你的状态看起来不错，继续保持自我觉察的习惯。",
-            icon="😊",
-            label="状态良好",
-            riskDescription="当前情绪整体稳定",
-            improvementSuggestions=["保持运动习惯", "与朋友分享近况", "继续记录情绪变化"],
-            timestamp=int(time.time() * 1000),
-        )
+        return " ".join(item.content for item in reversed(messages))
 
     def build_mock_reply(self, user_message: str) -> str:
         if any(keyword in user_message for keyword in CRISIS_KEYWORDS):
@@ -286,33 +229,3 @@ class SessionService:
                 + MOCK_AI_RESPONSE
             )
         return MOCK_AI_RESPONSE
-
-
-async def stream_mock_chat(
-    db: Session,
-    user: User,
-    session_id: int,
-    user_message: str,
-) -> AsyncGenerator[str, None]:
-    service = SessionService(db)
-    try:
-        service.save_user_message(session_id, user, user_message)
-    except ValueError as exc:
-        payload = json.dumps({"error": str(exc)}, ensure_ascii=False)
-        yield f"data: {payload}\n\n"
-        yield "data: [DONE]\n\n"
-        return
-
-    reply = service.build_mock_reply(user_message)
-    chunk_size = 4
-    accumulated = ""
-
-    for index in range(0, len(reply), chunk_size):
-        chunk = reply[index : index + chunk_size]
-        accumulated += chunk
-        payload = json.dumps({"content": chunk}, ensure_ascii=False)
-        yield f"data: {payload}\n\n"
-        await asyncio.sleep(0.05)
-
-    service.save_ai_message(session_id, user, accumulated)
-    yield "data: [DONE]\n\n"

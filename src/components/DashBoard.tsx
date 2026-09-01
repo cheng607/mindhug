@@ -6,7 +6,7 @@ import Icon3 from "../assets/icon3.png"
 import Icon4 from "../assets/icon4.png"
 import type { analyticsDataType } from "../types/analyType"
 import * as echarts from 'echarts';
-import { Divider } from "antd"
+import { Divider, message } from "antd"
 import { formatDate } from "../utils"
 
 export default function DashBoard() {
@@ -24,6 +24,7 @@ export default function DashBoard() {
                 setData(res.data)
             } catch (error) {
                 console.error(error)
+                message.error((error as Error).message || '加载统计数据失败')
             }
         }
         fetchAnalysis()
