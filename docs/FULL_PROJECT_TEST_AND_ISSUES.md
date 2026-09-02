@@ -276,27 +276,28 @@ cd .. && npm run lint && npm run build
 
 ```
 用户路径：
-- [x] 注册（不勾选协议应失败）→ 登录 → 首页 CTA 跳转咨询（API 冒烟已验证注册/登录）
-- [x] 新建会话 → 普通倾诉 → 咨询建议 → 知识问答（有引用）→ 刷新后引用仍在（API 已验证）
-- [x] 危机语句 → 弹窗 + 热线 + 管理端预警（API 已验证 crisis Agent；弹窗需浏览器）
-- [x] 提交情绪日记 → 管理端情绪日志可见（API 已验证）
-- [ ] 个人中心 → 继续对话携带 sessionId（需浏览器）
-- [x] 知识库浏览文章（API 已验证 article/page）
+- [x] 注册（不勾选协议应失败）→ 登录 → 首页 CTA 跳转咨询（Playwright 已验证）
+- [x] 新建会话 → 知识问答（有引用）→ 刷新后会话历史加载引用仍在（Playwright 已验证）
+- [x] 危机语句 → 弹窗 + 热线（Playwright 已验证 crisis 弹窗与 400-161-9995）
+- [x] 提交情绪日记 → 管理端情绪日志可见（Playwright 已验证）
+- [x] 个人中心 → 继续对话携带 sessionId（Playwright 已验证）
+- [x] 知识库浏览文章（Playwright 已验证）
 
 管理路径：
-- [x] 仪表盘数据加载（API 已验证）
-- [ ] 知识库发布/下架/编辑（需浏览器）
-- [x] 咨询记录（管理端跨用户 API 已验证）
-- [x] 风险预警处理（API 列表已验证；处理弹窗需浏览器）
-- [x] Agent Prompt 修改 + 重建索引（API 配置列表已验证）
+- [x] 仪表盘数据加载（Playwright 已验证）
+- [x] 知识文库页面加载（Playwright 已验证；发布/下架/编辑 UI 未逐按钮点击）
+- [x] 咨询记录跨用户（Playwright 已验证详情 Modal）
+- [x] 风险预警处理（Playwright 已验证列表 + 处理弹窗）
+- [x] Agent Prompt 配置 + 重建索引按钮（Playwright 已验证）
 
 合规 / 部署：
-- [ ] 页脚协议三链（需浏览器）
-- [ ] 咨询页免责横幅（需浏览器）
-- [ ] docker compose up -d --build（可选）
+- [x] 页脚协议三链（Playwright 已验证 agreement/privacy/disclaimer）
+- [x] 咨询页免责横幅（Playwright 已验证）
+- [ ] docker compose up -d --build（可选，需 .env 后手动执行）
 - [ ] 配置 LLM_API_KEY 后真实对话（可选）
 
-联调脚本：`backend/scripts/integration_smoke.py`（需后端 `uvicorn` @1235）
+浏览器自动化：`node e2e/browser-checklist.mjs`（前端 :5174 + 后端 :1235）
+API 自动化：`python backend/scripts/integration_smoke.py`
 ```
 
 ---
@@ -327,7 +328,8 @@ P2：
 验证：
 - [x] pytest 61 passed, 2 skipped（LLM 可选）
 - [x] npm run lint && npm run build
-- [ ] 手动 Checklist 第七节
+- [x] 浏览器 Checklist 第七节（Playwright 17/17）
+- [ ] docker compose 全栈（可选）
 ```
 
 ---

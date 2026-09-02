@@ -73,6 +73,11 @@ pytest tests/ -v
 
 # 可选：真实 LLM 集成测试（需 API Key，默认跳过）
 # LLM_PROVIDER=deepseek LLM_API_KEY=sk-xxx pytest tests/test_llm_optional.py -v -m llm
+
+# 浏览器联调 Checklist（Playwright，需前后端已启动）
+# 终端1: cd backend && uvicorn app.main:app --port 1235
+# 终端2: VITE_API_PROXY_TARGET=http://127.0.0.1:1235 npm run dev -- --port 5174
+# node e2e/browser-checklist.mjs
 ```
 
 CI 工作流：`.github/workflows/ci.yml`（push/PR 自动运行 lint + build + test）
