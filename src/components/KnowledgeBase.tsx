@@ -38,7 +38,7 @@ export default function KnowledgeBase() {
         <div className='bg-gray-100'>
             <div className='w-full h-28 flex items-center bg-gradient-to-r from-[#DE9C3E] to-[#8A63DE] px-10 gap-4'>
                 <BookOutlined className='text-white text-3xl' />
-                <div className='text-3xl text-white font-bold'>情绪日记</div>
+                <div className='text-3xl text-white font-bold'>知识库</div>
             </div>
             <div className='w-4/5 mx-auto p-5 flex gap-10'>
                 {/* 推荐阅读 */}
@@ -46,7 +46,14 @@ export default function KnowledgeBase() {
                     <div className='text-xl font-bold mt-5 mb-3'>推荐阅读</div>
                     <div className='gap-3 flex flex-col mb-5'>
                         {reclist.map(item => (
-                            <div key={item.id} className='flex flex-col  border border-gray-200 rounded-lg p-2 hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-l-amber-600'>
+                            <div
+                                key={item.id}
+                                className='flex flex-col border border-gray-200 rounded-lg p-2 hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-l-amber-600'
+                                onClick={() => handleClick(item.id)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleClick(item.id)}
+                                role="button"
+                                tabIndex={0}
+                            >
                                 <div className='text-lg font-semibold mb-2'>{item.title}</div>
                                 <div>阅读量：{item.readCount}</div>
                             </div>

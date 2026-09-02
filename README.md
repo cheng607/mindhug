@@ -59,6 +59,22 @@ docker compose up -d --build
 
 完整配置见 `backend/.env.example`
 
+### 启用真实 LLM（推荐）
+
+默认 `LLM_PROVIDER=mock` 使用固定模板，对话质量有限。启用真实大模型后，AI 会结合上下文生成个性化回复：
+
+```bash
+cd backend
+cp .env.example .env   # 若尚无 .env
+# 编辑 .env，设置：
+#   LLM_PROVIDER=deepseek
+#   LLM_API_KEY=sk-你的密钥
+#   LLM_MODEL=deepseek-chat
+uvicorn app.main:app --reload --port 8000
+```
+
+支持 `deepseek` / `openai` / `qwen`，配置 API Key 后自动启用，无需改代码。
+
 ## 测试
 
 ```bash

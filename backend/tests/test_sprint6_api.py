@@ -75,6 +75,33 @@ def test_router_listen_intent():
     assert classify_intent("今天心情不太好，想找人聊聊") == "listen"
 
 
+def test_router_knowledge_impact_intent():
+    assert classify_intent("下雨对情绪有什么影响") == "knowledge"
+
+
+def test_listen_mock_follow_up_differs():
+    from app.agents.mock_reply import build_listen_mock
+    from app.models.chat_session import SENDER_AI, SENDER_USER
+    from app.models.message import Message
+
+    first = build_listen_mock("感觉今天有点累啊", [])
+    history = [
+        Message(id=1, session_id=1, content="感觉今天有点累啊", sender_type=SENDER_USER, message_type=1),
+        Message(id=2, session_id=1, content=first, sender_type=SENDER_AI, message_type=1),
+    ]
+    second = build_listen_mock("最近天气一直下雨，感觉工作也不是很顺利", history)
+    assert first != second
+    assert "天气" in second or "工作" in second
+
+
+def test_should_supplement_rag_for_counsel():
+    from app.agents.mock_reply import should_supplement_rag
+
+    assert should_supplement_rag("counsel", "最近失眠怎么办") is True
+    assert should_supplement_rag("listen", "今天有点累") is True
+    assert should_supplement_rag("listen", "你好") is False
+
+
 def test_stream_includes_agent_metadata(client: TestClient, auth_headers: dict):
     create_resp = client.post(
         "/api/psychological-chat/session/start",
