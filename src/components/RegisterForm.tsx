@@ -22,11 +22,15 @@ export default function RegisterForm() {
         }
     };
     return (
-        <div className='flex flex-col items-center justify-center w-1/2 relative gap-3'>
-            <div className='text-3xl font-semibold'>创建您的账户</div>
-            <div className='text-sm text-gray-500'>请填写注册信息</div>
+        <div className="w-full max-w-sm">
+            <Link to="/auth/login" className="mb-4 inline-block text-sm text-[#569080] hover:underline">已有账户？去登录</Link>
+            <div className="mb-4">
+                <div className="text-2xl font-semibold text-gray-800">创建您的账户</div>
+                <div className="mt-1 text-sm text-gray-500">请填写注册信息</div>
+            </div>
             <Form
-                name="login"
+                name="register"
+                layout="vertical"
                 initialValues={{
                     remember: true,
                     userType: 1,

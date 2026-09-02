@@ -33,3 +33,46 @@ export const formatDate = (dateString: string): string => {
 /** 统一会话 ID 格式，去除 session_ 前缀 */
 export const normalizeSessionId = (id: string | number | undefined): string =>
     String(id ?? '').replace(/^session_/, '');
+
+/** 消息/会话时间：今天显示时分，否则显示月日时分 */
+export const formatDateTime = (dateString: string): string => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    if (Number.isNaN(date.getTime())) return dateString
+
+    const now = new Date()
+    const isToday =
+        date.getFullYear() === now.getFullYear() &&
+        date.getMonth() === now.getMonth() &&
+        date.getDate() === now.getDate()
+
+    if (isToday) {
+        return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+    }
+    return date.toLocaleString('zh-CN', {
+        month: 'numeric',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    })
+}
+
+/** 会话列表相对时间 */
+export const formatRelativeTime = (dateString: string): string => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    if (Number.isNaN(date.getTime())) return dateString
+
+    const diffMs = Date.now() - date.getTime()
+    const minutes = Math.floor(diffMs / 60000)
+    if (minutes < 1) return '刚刚'
+    if (minutes < 60) return `${minutes} 分钟前`
+
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours} 小时前`
+
+    const days = Math.floor(hours / 24)
+    if (days < 7) return `${days} 天前`
+
+    return formatDateTime(dateString)
+}

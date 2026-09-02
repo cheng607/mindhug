@@ -8,6 +8,7 @@ import { getAdminSessionMessages, getAdminSessions, exportAdminSessionsCsv } fro
 import type { sessionDetailType, sessionType } from "../types/sessionsType";
 import { Button, Modal, Space, Table, Tag, message } from "antd";
 import type { TablePaginationConfig } from "antd/es/table";
+import { formatDateTime } from "../utils";
 
 export default function Consultations() {
     const [sessionList, setSessionList] = useState<sessionType[]>([]);
@@ -61,7 +62,7 @@ export default function Consultations() {
             key: 'startedAt',
             width: 180,
             align: 'center' as const,
-            render: (val: string) => val ? val.replace('T', ' ').slice(0, 19) : '-'
+            render: (val: string) => val ? formatDateTime(val) : '-'
         },
         {
             title: '操作',
@@ -164,7 +165,7 @@ export default function Consultations() {
             >
                 <div className="p-3 bg-[#F7FAF9]">
                     <div><span className="inline-block w-24">用户：</span>{currentSession?.userNickname}</div>
-                    <div><span className="inline-block w-24">开始时间：</span>{currentSession?.startedAt}</div>
+                    <div><span className="inline-block w-24">开始时间：</span>{formatDateTime(currentSession?.startedAt || '')}</div>
                     <div><span className="inline-block w-24">消息数：</span>{currentSession?.messageCount}条</div>
                     {currentSession?.emotionTag && (
                         <div><span className="inline-block w-24">情绪标签：</span>{currentSession.emotionTag}</div>
@@ -176,7 +177,7 @@ export default function Consultations() {
                         <div key={detail.id} className={`${detail.senderType === 1 ? 'bg-[#E9F4FB]' : 'bg-[#F0FAEE]'} p-3 mb-3 rounded-lg`}>
                             <div className={`rounded-lg flex items-center justify-between mb-2`}>
                                 <div>{detail.senderTypeDesc}</div>
-                                <div className="text-sm text-gray-500">{detail.createdAt}</div>
+                                <div className="text-sm text-gray-500">{formatDateTime(detail.createdAt)}</div>
                             </div>
                             <div className="text-gray-600">
                                 {detail.senderType === 2 ? (

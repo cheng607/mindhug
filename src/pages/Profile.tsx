@@ -9,6 +9,8 @@ import Loading from '../components/common/Loading'
 import { useUserStore } from '../store/userStore'
 import type { diaryType } from '../types/emotionType'
 import type { sessionItemType } from '../types/sessionsType'
+import { getEmotionLabel, getEmotionTagColor } from '../constants/emotions'
+import { formatRelativeTime } from '../utils'
 import { fileBaseUrl } from '../config'
 
 export default function Profile() {
@@ -87,7 +89,7 @@ export default function Profile() {
     if (loading) return <Loading tip="加载个人中心..." />
 
     return (
-        <div className="max-w-4xl mx-auto py-8 px-4">
+        <div className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-6">
             <Card className="mb-6">
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
                     <Avatar
@@ -136,11 +138,11 @@ export default function Profile() {
                                     title={item.sessionTitle}
                                     description={
                                         <>
-                                            <span className="text-gray-500 text-sm">{item.lastMessageTime}</span>
+                                            <span className="text-gray-500 text-sm">{formatRelativeTime(item.lastMessageTime)}</span>
                                             <span className="mx-2">·</span>
                                             <span className="text-gray-400 text-sm">{item.messageCount} 条消息</span>
                                             {item.emotionTag && (
-                                                <Tag color="green" className="ml-2">{item.emotionTag}</Tag>
+                                                <Tag color={getEmotionTagColor(item.emotionTag)} className="ml-2">{item.emotionTag}</Tag>
                                             )}
                                         </>
                                     }
@@ -173,7 +175,7 @@ export default function Profile() {
                                     title={
                                         <span>
                                             {item.diaryDate}
-                                            <Tag color="blue" className="ml-2">{item.dominantEmotion}</Tag>
+                                            <Tag color="blue" className="ml-2">{getEmotionLabel(item.dominantEmotion)}</Tag>
                                             <span className="text-gray-400 text-sm ml-2">心情 {item.moodScore}/10</span>
                                         </span>
                                     }

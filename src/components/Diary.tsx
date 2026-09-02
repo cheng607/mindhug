@@ -22,13 +22,11 @@ const emotions = [
     { value: 'confused', label: '困惑', icon: <QuestionCircleOutlined className="text-black text-4xl flex" /> },
 ]
 
+import PageHero from './common/PageHero'
+import { EMOTION_LABEL_MAP } from '../constants/emotions'
+
 // 情绪评分描述映射
 const rateDescriptions = ['极差', '低落不悦', '不太好', '一般', '平平', '还行', '不错', '开心', '很开心', '超棒']
-
-const emotionLabelMap: Record<string, string> = {
-    happy: '开心', calm: '平静', anxious: '焦虑', sad: '悲伤',
-    excited: '兴奋', tired: '疲惫', surprised: '惊讶', confused: '困惑',
-}
 
 export default function Diary() {
     const [form] = Form.useForm()
@@ -92,16 +90,17 @@ export default function Diary() {
     }
 
     return (
-        <div>
-            {/* 顶部标题栏 */}
-            <div className='w-full h-28 flex items-center bg-gradient-to-r from-[#98CD46] to-[#E0AD42] px-10 gap-4'>
-                <HeartOutlined className='text-white text-3xl' />
-                <div className='text-3xl text-white font-bold'>情绪日记</div>
-            </div>
+        <div className="flex flex-1 flex-col bg-slate-50 pb-10">
+            <PageHero
+                icon={<HeartOutlined />}
+                title="情绪日记"
+                subtitle="记录心情，觉察情绪变化"
+                gradient="from-[#98CD46] to-[#E0AD42]"
+            />
 
             <Form
                 form={form}
-                className='w-3/5 bg-[#F9FBFC] mx-auto p-5 space-y-4'
+                className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6 sm:px-6"
                 initialValues={{
                     sleepQuality: 0,
                     stressLevel: 0,
@@ -111,8 +110,8 @@ export default function Diary() {
                 onFinish={onFinish}
             >
                 {/* 今日情绪评分 */}
-                <div className='bg-white p-5 rounded-lg'>
-                    <div className='text-2xl font-bold mb-3'>今日情绪评分</div>
+                <div className='rounded-xl bg-white p-4 shadow-sm sm:p-5'>
+                    <div className='mb-3 text-xl font-bold sm:text-2xl'>今日情绪评分</div>
                     <div className='text-gray-500 mb-2'>您今天的整体情绪状态如何？（1-10分）</div>
                     <div className="flex items-center gap-2">
                         <Form.Item
@@ -134,8 +133,8 @@ export default function Diary() {
                 </div>
 
                 {/* 主要情绪 */}
-                <div className='bg-white p-5 rounded-lg'>
-                    <div className='text-2xl font-bold mb-4'>主要情绪</div>
+                <div className='rounded-xl bg-white p-4 shadow-sm sm:p-5'>
+                    <div className='mb-4 text-xl font-bold sm:text-2xl'>主要情绪</div>
                     <Form.Item
                         name='dominantEmotion'
                         noStyle
@@ -144,13 +143,13 @@ export default function Diary() {
                         <Radio.Group
                             value={selectedEmotion}
                             onChange={onEmotionChange}
-                            className="grid grid-cols-4 gap-4"
+                            className="grid grid-cols-2 gap-3 sm:grid-cols-4"
                         >
                             {emotions.map(emotion => (
                                 <Radio.Button
                                     key={emotion.value}
                                     value={emotion.value}
-                                    className={` flex items-center justify-center p-4 h-24 rounded-lg border-2 transition-all ${selectedEmotion === emotion.value ? 'border-blue-500' : ' '} `}
+                                    className={`flex h-20 flex-col items-center justify-center rounded-lg border-2 transition-all sm:h-24 ${selectedEmotion === emotion.value ? 'border-blue-500 bg-blue-50' : 'border-transparent'}`}
                                 >
                                     {emotion.icon}
                                     <span className="mt-2 text-lg font-medium text-gray-700">{emotion.label}</span>
@@ -197,15 +196,15 @@ export default function Diary() {
                 </div>
 
                 {/* 睡眠质量 & 压力水平 */}
-                <div className="flex gap-10">
-                    <div className='bg-white p-5 rounded-lg flex-1'>
-                        <div className='text-2xl font-bold mb-3'>睡眠质量</div>
+                <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">
+                    <div className='flex-1 rounded-xl bg-white p-4 shadow-sm sm:p-5'>
+                        <div className='mb-3 text-xl font-bold sm:text-2xl'>睡眠质量</div>
                         <Form.Item
                             name="sleepQuality"
                             noStyle
                             rules={[{ required: true, message: '请选择睡眠质量' }]}
                         >
-                            <select className='w-full border border-gray-200 rounded-lg p-3 focus:outline-none focus:border-blue-500'>
+                            <select className='w-full rounded-lg border border-gray-200 p-3 focus:border-blue-500 focus:outline-none'>
                                 <option value="0">请选择</option>
                                 <option value="1">很差</option>
                                 <option value="2">较差</option>
@@ -215,20 +214,20 @@ export default function Diary() {
                             </select>
                         </Form.Item>
                     </div>
-                    <div className='bg-white p-5 rounded-lg flex-1'>
-                        <div className='text-2xl font-bold mb-3'>压力水平</div>
+                    <div className='flex-1 rounded-xl bg-white p-4 shadow-sm sm:p-5'>
+                        <div className='mb-3 text-xl font-bold sm:text-2xl'>压力水平</div>
                         <Form.Item
                             name="stressLevel"
                             noStyle
                             rules={[{ required: true, message: '请选择压力水平' }]}
                         >
-                            <select className='w-full border border-gray-200 rounded-lg p-3 focus:outline-none focus:border-blue-500'>
+                            <select className='w-full rounded-lg border border-gray-200 p-3 focus:border-blue-500 focus:outline-none'>
                                 <option value="0">请选择</option>
-                                <option value="1">很差</option>
-                                <option value="2">较差</option>
+                                <option value="1">很低</option>
+                                <option value="2">较低</option>
                                 <option value="3">一般</option>
-                                <option value="4">良好</option>
-                                <option value="5">优秀</option>
+                                <option value="4">较高</option>
+                                <option value="5">很高</option>
                             </select>
                         </Form.Item>
                     </div>
@@ -252,8 +251,9 @@ export default function Diary() {
                 </Form.Item>
             </Form>
 
-            <div className='w-3/5 mx-auto mt-8 mb-10'>
-                <div className='text-2xl font-bold mb-4'>我的日记历史</div>
+            <div className='mx-auto mb-10 w-full max-w-3xl px-4 sm:px-6'>
+                <div className='mb-4 text-xl font-bold sm:text-2xl'>我的日记历史</div>
+                <div className="overflow-x-auto rounded-xl bg-white p-2 shadow-sm sm:p-4">
                 <Table
                     dataSource={history}
                     rowKey="id"
@@ -278,7 +278,7 @@ export default function Diary() {
                             dataIndex: 'dominantEmotion',
                             key: 'dominantEmotion',
                             width: 80,
-                            render: (val: string) => <Tag>{emotionLabelMap[val] || val}</Tag>,
+                            render: (val: string) => <Tag>{EMOTION_LABEL_MAP[val] || val}</Tag>,
                         },
                         {
                             title: '评分',
@@ -291,6 +291,7 @@ export default function Diary() {
                         { title: '感想', dataIndex: 'diaryContent', key: 'diaryContent', ellipsis: true },
                     ]}
                 />
+                </div>
             </div>
         </div>
     )

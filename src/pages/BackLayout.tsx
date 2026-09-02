@@ -160,7 +160,7 @@ function BackLayout() {
                 <Menu
                     theme="dark"
                     mode="inline"
-                    defaultSelectedKeys={[getCurrentMenuKey()]}
+                    selectedKeys={[getCurrentMenuKey()]}
                     onClick={(item) => { handleMenuClick(item.key) }}
                     items={menuMap}
                 />

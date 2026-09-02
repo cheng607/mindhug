@@ -14,35 +14,31 @@ export default function ForgotPasswordForm() {
     }
 
     return (
-        <div className='flex items-center justify-center w-1/2'>
-            <div className='relative flex flex-col items-center justify-center gap-5'>
-                <Link to="/auth/login" className='absolute -top-20 -left-0'>
-                    <SwapLeftOutlined />返回登录
-                </Link>
-                <div className='text-3xl font-semibold'>忘记密码</div>
-                <div className='text-sm text-gray-500 text-center w-80'>
-                    输入注册邮箱，我们将发送密码重置链接
-                </div>
-                <Form name="forgot" onFinish={onFinish} className='flex flex-col'>
-                    <Form.Item
-                        label="邮箱"
-                        layout='vertical'
-                        name="email"
-                        rules={[
-                            { required: true, message: '请输入邮箱' },
-                            { type: 'email', message: '邮箱格式不正确' },
-                        ]}
-                        className='w-80'
-                    >
-                        <Input placeholder="请输入注册邮箱" />
-                    </Form.Item>
-                    <Form.Item>
-                        <Button block type="primary" htmlType="submit" className='my-3'>
-                            发送重置链接
-                        </Button>
-                    </Form.Item>
-                </Form>
+        <div className="w-full max-w-sm">
+            <Link to="/auth/login" className="mb-6 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#569080]">
+                <SwapLeftOutlined />返回登录
+            </Link>
+            <div className="mb-6">
+                <div className="text-2xl font-semibold text-gray-800">忘记密码</div>
+                <p className="mt-1 text-sm text-gray-500">输入注册邮箱，我们将发送密码重置链接</p>
             </div>
+            <Form name="forgot" layout="vertical" onFinish={onFinish} className="w-full">
+                <Form.Item
+                    label="邮箱"
+                    name="email"
+                    rules={[
+                        { required: true, message: '请输入邮箱' },
+                        { type: 'email', message: '邮箱格式不正确' },
+                    ]}
+                >
+                    <Input placeholder="请输入注册邮箱" size="large" />
+                </Form.Item>
+                <Form.Item>
+                    <Button block type="primary" htmlType="submit" size="large">
+                        发送重置链接
+                    </Button>
+                </Form.Item>
+            </Form>
         </div>
     )
 }

@@ -1,22 +1,25 @@
 import { Button, Layout, message } from "antd";
 import { Content, Footer, Header } from "antd/es/layout/layout";
 import AgentIcon from "../assets/agent3.png"
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useUserStore } from "../store/userStore";
 import { logout } from "../apis/user";
+
+const navLinkClass = "whitespace-nowrap text-xs text-gray-600 hover:text-[#589081] transition-colors sm:text-sm";
 
 export default function Home() {
     const userInfo = useUserStore(state => state.userInfo);
     const roleType = useUserStore(state => state.roleType);
     const clearUserInfo = useUserStore(state => state.clearUserInfo);
     const navigate = useNavigate();
-    // 退出登录
+    const location = useLocation();
+    const isChatPage = location.pathname === '/consultation';
+
     const handleLogout = async () => {
         try {
             const res = await logout()
             clearUserInfo()
             message.success(res.data);
-            // 延迟跳转，确保提示显示
             setTimeout(() => {
                 navigate('/auth');
             }, 1000);
@@ -27,45 +30,48 @@ export default function Home() {
     };
 
     return (
-        <Layout className="min-h-screen">
-            <Header className="bg-white h-12 flex items-center justify-between">
-                <div className="flex items-center gap-3 mx-10">
-                    <img src={AgentIcon} alt="" />
-                    <span className="font-medium">心理健康AI助手</span>
-                </div>
-                <div className="flex items-center gap-5 mx-10">
-                    <Link to={'/'}>首页</Link>
+        <Layout className="flex h-screen flex-col overflow-hidden">
+            <Header className="site-header !flex !h-11 shrink-0 items-center justify-between !bg-white !px-3 !py-0 sm:!px-5">
+                <Link to="/" className="flex items-center gap-2">
+                    <img src={AgentIcon} alt="" className="h-6 w-6" />
+                    <span className="text-sm font-medium text-gray-800">MindHug 心语陪伴</span>
+                </Link>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:gap-x-4">
+                    <Link to="/" className={navLinkClass}>首页</Link>
 
                     {userInfo && roleType === '1' ? (
                         <>
-                            <Link to={'/consultation'}>AI咨询</Link>
-                            <Link to={'/diary'}>情绪日记</Link>
-                            <Link to={'/knowledgeBase'}>知识库</Link>
-                            <Link to={'/profile'}>个人中心</Link>
-                            <Button type="default" size="small" onClick={handleLogout}>退出登录</Button>
+                            <Link to="/consultation" className={navLinkClass}>AI咨询</Link>
+                            <Link to="/diary" className={navLinkClass}>情绪日记</Link>
+                            <Link to="/knowledgeBase" className={navLinkClass}>知识库</Link>
+                            <Link to="/profile" className={navLinkClass}>个人中心</Link>
+                            <Button type="default" size="small" className="!h-7 !text-xs" onClick={handleLogout}>退出</Button>
                         </>
                     ) : (
                         <>
-                            <Link to={'/knowledgeBase'}>知识库</Link>
-                            <Link to={'/auth/login'}>登录</Link>
-                            <Button type="primary" size="small" onClick={() => { navigate('/auth/register') }}>注册</Button>
+                            <Link to="/knowledgeBase" className={navLinkClass}>知识库</Link>
+                            <Link to="/auth/login" className={navLinkClass}>登录</Link>
+                            <Button type="primary" size="small" className="!h-7 !text-xs" onClick={() => { navigate('/auth/register') }}>注册</Button>
                         </>
                     )}
                 </div>
             </Header>
-            <Content>
+            <Content className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 <Outlet />
             </Content>
-            <Footer className="flex flex-col items-center justify-center bg-[#202834] text-white py-4 gap-2">
-                <div className="flex items-center gap-4 text-sm">
-                    <Link to="/agreement" className="text-gray-300 hover:text-white">用户协议</Link>
-                    <span className="text-gray-600">|</span>
-                    <Link to="/privacy" className="text-gray-300 hover:text-white">隐私政策</Link>
-                    <span className="text-gray-600">|</span>
-                    <Link to="/disclaimer" className="text-gray-300 hover:text-white">免责声明</Link>
-                </div>
-                <div className="text-xs text-gray-400">@2026 MindHug 心语陪伴 · AI 服务不能替代专业心理咨询</div>
-            </Footer>
-        </Layout >
+            {!isChatPage && (
+                <Footer className="site-footer shrink-0 !bg-[#202834] !py-2 !px-3 text-white">
+                    <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-gray-400">
+                        <Link to="/agreement" className="text-gray-300 hover:text-white">用户协议</Link>
+                        <span className="hidden text-gray-600 sm:inline">·</span>
+                        <Link to="/privacy" className="text-gray-300 hover:text-white">隐私政策</Link>
+                        <span className="hidden text-gray-600 sm:inline">·</span>
+                        <Link to="/disclaimer" className="text-gray-300 hover:text-white">免责声明</Link>
+                        <span className="hidden text-gray-600 sm:inline">·</span>
+                        <span>@2026 MindHug · AI 不能替代专业心理咨询</span>
+                    </div>
+                </Footer>
+            )}
+        </Layout>
     )
 }

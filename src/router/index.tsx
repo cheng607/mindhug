@@ -83,9 +83,9 @@ const router = createBrowserRouter([
             { path: 'diary', element: <RequireAuth><LazyPage><Diary /></LazyPage></RequireAuth> },
             { path: 'knowledgeBase', element: <LazyPage><KnowledgeBase /></LazyPage> },
             { path: 'profile', element: <RequireAuth><LazyPage><Profile /></LazyPage></RequireAuth> },
+            { path: 'article/:id', element: <LazyPage><Article /></LazyPage> },
         ]
     },
-    { path: 'article/:id', element: <LazyPage><Article /></LazyPage> },
     { path: 'agreement', element: <UserAgreement /> },
     { path: 'privacy', element: <PrivacyPolicy /> },
     { path: 'disclaimer', element: <Disclaimer /> },

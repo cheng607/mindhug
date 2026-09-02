@@ -2,12 +2,14 @@ import AgentIcon from '../../assets/agent4.png'
 
 export default function AgentCard() {
     return (
-        <div className='flex flex-col items-center gap-2 bg-[#FEFEFC] px-6 py-3 shadow-md rounded-xl border-2 w-72'>
-            <img src={AgentIcon} alt="AI助手" />
-            <div className='text-[#E79E39] font-medium'>宁渡AI助手</div>
-            <div className='text-green-700 flex items-center gap-2 text-xs'>
-                <div className='bg-green-700 w-1.5 h-1.5 rounded-full' />
-                在线服务中
+        <div className="flex items-center gap-3 rounded-2xl border border-orange-100 bg-white px-4 py-3 shadow-sm">
+            <img src={AgentIcon} alt="AI助手" className="h-12 w-12 shrink-0 rounded-full" />
+            <div className="min-w-0 flex-1">
+                <div className="font-medium text-[#D4842A]">MindHug 小暖</div>
+                <div className="mt-0.5 flex items-center gap-1.5 text-xs text-emerald-700">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    在线服务中
+                </div>
             </div>
         </div>
     )

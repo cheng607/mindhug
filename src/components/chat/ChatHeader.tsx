@@ -1,33 +1,34 @@
+import { MenuOutlined } from '@ant-design/icons'
 import HeartImg from '../../assets/icon5.png'
 
 interface ChatHeaderProps {
-    onNewSession: () => void
     activeAgent?: string | null
+    sessionTitle?: string
+    onOpenSidebar?: () => void
 }
 
-export default function ChatHeader({ onNewSession, activeAgent }: ChatHeaderProps) {
+export default function ChatHeader({ activeAgent, sessionTitle, onOpenSidebar }: ChatHeaderProps) {
     return (
-        <div className='p-3 bg-[#E89645] h-20 flex items-center justify-between'>
-            <div className='flex items-center'>
-                <img src={HeartImg} className='p-3' alt="" />
-                <div className='flex flex-col text-white gap-1'>
-                    <div className='text-lg font-medium'>宁渡AI助手</div>
-                    <div className='text-xs'>
-                        {activeAgent ? `${activeAgent} 正在服务` : '您的贴心AI心理健康助手'}
-                    </div>
+        <div className="flex shrink-0 items-center gap-2 border-b border-slate-100 bg-white px-3 py-2 sm:px-4">
+            {onOpenSidebar && (
+                <button
+                    type="button"
+                    aria-label="打开历史对话"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-600 hover:bg-slate-100 lg:hidden"
+                    onClick={onOpenSidebar}
+                >
+                    <MenuOutlined className="text-sm" />
+                </button>
+            )}
+            <img src={HeartImg} className="h-7 w-7 shrink-0" alt="" />
+            <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-medium text-gray-900">
+                    {sessionTitle || 'MindHug 小暖'}
+                </div>
+                <div className="truncate text-[11px] text-gray-500">
+                    {activeAgent ? `${activeAgent} 正在服务` : 'AI 心理健康陪伴 · 随时倾听你'}
                 </div>
             </div>
-            <button
-                type="button"
-                aria-label="新建会话"
-                className='rounded-full bg-white w-8 h-8 flex items-center justify-center text-gray-400 mr-7 cursor-pointer transition-all duration-200 hover:bg-gray-100 hover:text-gray-600 active:scale-95 border-none'
-                onClick={onNewSession}
-            >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-            </button>
         </div>
     )
 }

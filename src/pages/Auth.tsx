@@ -3,18 +3,20 @@ import AgentIcon from "../assets/agent2.png"
 
 function Auth() {
     return (
-        <div className="min-h-screen flex">
-            <div className="bg-[#569080] h-auto w-1/2 flex items-center justify-center">
-                <div className="flex flex-col items-center justify-center w-1/2 gap-5">
-                    <div className="text-4xl text-white font-bold">心理AI助手</div>
-                    <div className="text-white text-center">
+        <div className="flex min-h-screen flex-col md:flex-row">
+            <div className="flex flex-1 items-center justify-center bg-[#569080] px-6 py-10 md:py-0">
+                <div className="flex max-w-md flex-col items-center gap-4 text-center md:gap-5">
+                    <div className="text-3xl font-bold text-white md:text-4xl">MindHug 心语陪伴</div>
+                    <p className="text-sm leading-relaxed text-white/90 md:text-base">
                         每个深夜，每个焦虑的时刻，我们都在这里。不必独自承受，让心与心的连接温暖您的每一天
-                    </div>
-                    <img className="rounded" src={AgentIcon} alt="" />
+                    </p>
+                    <img className="w-40 rounded-lg md:w-48" src={AgentIcon} alt="" />
                 </div>
             </div>
-            <Outlet />
-        </div >
+            <div className="flex flex-1 items-center justify-center bg-white px-6 py-10">
+                <Outlet />
+            </div>
+        </div>
     );
 };
 

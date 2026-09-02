@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { getCategory, getArticle, getArticleById, deleteArticle, updateArticleStatus } from "../apis/article"
 import type { articleData, articleType, categoryType, articleParamsType } from "../types/articleType"
 import { Button, Divider, Table, Space, message } from "antd";
+import { formatDateTime } from "../utils";
 import TableSearch from "./TableSearch";
 import ArticleDialog from "./ArticleDialog";
 
@@ -160,6 +161,7 @@ export default function Knowledge() {
             dataIndex: 'publishedAt',
             key: 'publishedAt',
             width: 180,
+            render: (val: string) => val && val !== '未发布' ? formatDateTime(val) : val,
         },
         {
             title: '操作',

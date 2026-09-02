@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkBreaks from 'remark-breaks'
@@ -8,6 +8,7 @@ import { Dropdown } from 'antd'
 import type { MenuProps } from 'antd'
 import AgentIcon from '../../assets/agent4.png'
 import type { sessionDetailType } from '../../types/sessionsType'
+import { formatDateTime } from '../../utils'
 import Empty from '../common/Empty'
 
 interface ChatWindowProps {
@@ -25,6 +26,8 @@ export default function ChatWindow({
     onDeleteMessage,
     onRegenerateMessage,
 }: ChatWindowProps) {
+    const scrollRef = useRef<HTMLDivElement>(null)
+
     const normalizedMessages = useMemo(() => {
         if (!Array.isArray(messages)) return []
         return [...messages].sort((a, b) => {
@@ -45,37 +48,52 @@ export default function ChatWindow({
         return null
     }, [isAiTyping, normalizedMessages])
 
+    useEffect(() => {
+        const el = scrollRef.current
+        if (!el) return
+        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+    }, [normalizedMessages, isAiTyping])
+
     const renderMessageContent = (item: sessionDetailType) => {
         const content = item.content || ''
         const isTypingPlaceholder = item.id === typingMessageId
 
         if (isTypingPlaceholder) {
-            return <span className='text-gray-500'>正在输入中...</span>
+            return (
+                <span className="inline-flex items-center gap-1 text-gray-500">
+                    <span className="inline-flex gap-1">
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-orange-400 [animation-delay:-0.2s]" />
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-orange-400 [animation-delay:-0.1s]" />
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-orange-400" />
+                    </span>
+                    正在输入
+                </span>
+            )
         }
         if (!content.trim()) {
-            return <span className='text-gray-400'>（空消息）</span>
+            return <span className="text-gray-400">（空消息）</span>
         }
         if (item.senderType === 2) {
             return (
                 <>
-                    <div className='whitespace-pre-wrap break-words [&_p]:my-1 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-1'>
+                    <div className="break-words text-gray-800 [&_li]:my-0.5 [&_ol]:my-2 [&_p]:my-1.5 [&_ul]:my-2">
                         <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
                             {content}
                         </ReactMarkdown>
                     </div>
                     {item.citations && item.citations.length > 0 && (
-                        <div className='mt-3 pt-2 border-t border-orange-200'>
-                            <div className='text-xs text-gray-500 mb-1 flex items-center gap-1'>
+                        <div className="mt-3 rounded-lg border border-orange-100 bg-white/70 px-3 py-2">
+                            <div className="mb-1.5 flex items-center gap-1 text-xs font-medium text-gray-500">
                                 <BookOutlined />
                                 <span>参考来源</span>
                             </div>
-                            <div className='flex flex-col gap-1'>
+                            <div className="flex flex-col gap-1">
                                 {item.citations.map((cite, index) => (
                                     <Link
                                         key={`${cite.articleId}-${index}`}
                                         to={`/article/${cite.articleId}`}
-                                        className='text-xs text-blue-600 hover:text-blue-800 hover:underline text-left'
-                                        target='_blank'
+                                        className="text-left text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                                        target="_blank"
                                     >
                                         《{cite.title}》
                                     </Link>
@@ -86,7 +104,7 @@ export default function ChatWindow({
                 </>
             )
         }
-        return <span className='whitespace-pre-wrap break-words'>{content}</span>
+        return <span className="whitespace-pre-wrap break-words">{content}</span>
     }
 
     const buildMenuItems = (item: sessionDetailType): MenuProps['items'] => {
@@ -120,39 +138,47 @@ export default function ChatWindow({
     }
 
     return (
-        <div className='flex-1 min-h-[320px] max-h-[70vh] lg:h-[800px] p-3 overflow-y-scroll'>
+        <div ref={scrollRef} className="scrollbar-thin min-h-0 flex-1 overflow-y-auto bg-white">
+            <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
             {normalizedMessages.length === 0 ? (
-                <Empty description="开始一段新的对话吧" className="h-full" />
+                <Empty description="开始一段新的对话吧，小暖在这里倾听你" className="min-h-[280px]" />
             ) : normalizedMessages.map(item => {
                 const isUser = item.senderType === 1
                 const menuItems = buildMenuItems(item)
                 return (
-                    <div className={`p-4 flex ${isUser ? 'justify-end' : 'justify-start'}`} key={item.id}>
-                        <div className={`flex gap-2 max-w-[85%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                    <div className={`mb-4 flex ${isUser ? 'justify-end' : 'justify-start'}`} key={item.id}>
+                        <div className={`flex max-w-[88%] gap-2.5 sm:max-w-[82%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
                             {isUser ? (
-                                <UserOutlined className='w-8 h-8 flex items-center justify-center rounded-full text-white bg-[#5B616D]' />
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-600 text-white">
+                                    <UserOutlined className="text-sm" />
+                                </div>
                             ) : (
-                                <img src={AgentIcon} className='w-8 h-8 rounded-full' alt="AI" />
+                                <img src={AgentIcon} className="h-8 w-8 shrink-0 rounded-full ring-2 ring-orange-100" alt="AI" />
                             )}
-                            <div className={isUser ? 'text-right' : 'text-left'}>
-                                <div className={`inline-flex items-start gap-1 text-gray-800 px-3 py-2 my-2 rounded-lg break-words ${isUser ? 'bg-[#F5F7FA] rounded-tr-none' : 'bg-[#FFF7ED] rounded-tl-none'}`}>
-                                    <div className='flex-1'>{renderMessageContent(item)}</div>
+                            <div className={`min-w-0 ${isUser ? 'text-right' : 'text-left'}`}>
+                                <div className={`inline-flex max-w-full items-start gap-1 rounded-2xl px-3.5 py-2.5 shadow-sm ${
+                                    isUser
+                                        ? 'rounded-tr-md bg-slate-100 text-gray-800'
+                                        : 'rounded-tl-md border border-orange-100 bg-[#FFF7ED] text-gray-800'
+                                }`}>
+                                    <div className="min-w-0 flex-1 text-left">{renderMessageContent(item)}</div>
                                     {menuItems && menuItems.length > 0 && (
                                         <Dropdown menu={{ items: menuItems }} trigger={['click']}>
-                                            <button type='button' className='text-gray-400 hover:text-gray-600 p-1 shrink-0'>
+                                            <button type="button" className="shrink-0 rounded p-1 text-gray-400 transition hover:bg-black/5 hover:text-gray-600">
                                                 <MoreOutlined />
                                             </button>
                                         </Dropdown>
                                     )}
                                 </div>
-                                <div className='text-xs text-gray-500 mt-1'>
-                                    {new Date(item.createdAt).toLocaleString()}
+                                <div className="mt-1 px-1 text-[11px] text-gray-400">
+                                    {formatDateTime(item.createdAt)}
                                 </div>
                             </div>
                         </div>
                     </div>
                 )
             })}
+            </div>
         </div>
     )
 }

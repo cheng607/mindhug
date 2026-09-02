@@ -10,12 +10,10 @@ import {
     getSessionsByPage,
     updateMessage,
 } from '../apis/sessions'
-import AgentCard from './chat/AgentCard'
+import ChatSidebar from './chat/ChatSidebar'
 import ChatHeader from './chat/ChatHeader'
 import ChatWindow from './chat/ChatWindow'
-import EmotionGarden from './chat/EmotionGarden'
 import MessageInput from './chat/MessageInput'
-import SessionList from './chat/SessionList'
 import AiDisclaimerBanner from './chat/AiDisclaimerBanner'
 import CrisisInterventionModal from './chat/CrisisInterventionModal'
 import { useChatStream } from '../hooks/useChatStream'
@@ -38,6 +36,7 @@ export default function Consultation() {
     const [editOpen, setEditOpen] = useState(false)
     const [editContent, setEditContent] = useState('')
     const [editingMessage, setEditingMessage] = useState<sessionDetailType | null>(null)
+    const [sidebarOpen, setSidebarOpen] = useState(false)
 
     const reloadMessages = useCallback(async (sessionId: string) => {
         try {
@@ -273,20 +272,43 @@ export default function Consultation() {
     }
 
     return (
-        <div className='flex flex-col lg:flex-row bg-white w-full max-w-6xl mx-auto px-2 sm:px-4 py-4 gap-4'>
-            <div className='p-3 sm:p-5 flex flex-col gap-4 lg:gap-5 lg:w-72 shrink-0 order-2 lg:order-1'>
-                <AgentCard />
-                <EmotionGarden emotion={currentEmotion} />
-                <SessionList
+        <div className="relative flex h-full min-h-0 flex-1 overflow-hidden bg-white">
+            {sidebarOpen && (
+                <button
+                    type="button"
+                    aria-label="关闭侧边栏"
+                    className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
+            <div
+                className={`fixed bottom-0 left-0 top-11 z-50 flex transition-transform duration-200 lg:relative lg:top-auto lg:z-auto lg:h-full lg:translate-x-0 ${
+                    sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+                }`}
+            >
+                <ChatSidebar
                     sessions={list}
+                    currentSessionId={currentSession?.sessionId}
+                    emotion={currentEmotion}
                     emotionTagFilter={emotionTagFilter}
+                    onNewSession={() => {
+                        setSidebarOpen(false)
+                        handleNew()
+                    }}
                     onEmotionTagFilterChange={setEmotionTagFilter}
-                    onSessionClick={handleSessionClick}
+                    onSessionClick={(session) => {
+                        setSidebarOpen(false)
+                        handleSessionClick(session)
+                    }}
                     onDeleteSession={handleDeleteSession}
                 />
             </div>
-            <div className='border p-3 sm:p-5 shadow-md rounded-lg flex flex-col w-full lg:flex-1 min-w-0 min-h-[60vh] order-1 lg:order-2'>
-                <ChatHeader onNewSession={handleNew} activeAgent={activeAgent} />
+            <main className="flex min-w-0 flex-1 flex-col bg-white">
+                <ChatHeader
+                    activeAgent={activeAgent}
+                    sessionTitle={currentSession?.sessionTitle}
+                    onOpenSidebar={() => setSidebarOpen(true)}
+                />
                 <AiDisclaimerBanner />
                 <ChatWindow
                     messages={chatList}
@@ -301,7 +323,7 @@ export default function Consultation() {
                     onChange={setMsg}
                     onSend={handleSend}
                 />
-            </div>
+            </main>
             <CrisisInterventionModal
                 open={crisisModalOpen}
                 onClose={() => setCrisisModalOpen(false)}

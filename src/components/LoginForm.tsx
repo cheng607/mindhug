@@ -25,47 +25,47 @@ export default function LoginForm() {
         }
     };
     return (
-        <div className='flex items-center justify-center w-1/2'>
-            <div className='relative flex flex-col items-center justify-center gap-5'>
-                <Link to="/" className='absolute -top-20 -left-0'><SwapLeftOutlined />返回首页</Link>
-                <div className='text-3xl font-semibold'>登录您的账户</div>
-                <div className='text-sm text-gray-500'>请输入您的登录信息</div>
-                <Form
-                    name="login"
-                    initialValues={{ remember: true }}
-                    onFinish={onFinish}
-                    className='flex flex-col'
-                >
-                    <Form.Item
-                        label="用户名或邮箱"
-                        layout='vertical'
-                        name="username"
-                        rules={[{ required: true, message: '请输入用户名或邮箱' }]}
-                        className='w-80'
-                    >
-                        <Input placeholder="请输入用户名或邮箱" />
-                    </Form.Item>
-                    <Form.Item
-                        label="密码"
-                        layout='vertical'
-                        name="password"
-                        rules={[{ required: true, message: '请输入密码' }]}
-                    >
-                        <Input.Password placeholder="请输入密码" />
-                    </Form.Item>
-                    <div className='text-right -mt-2 mb-2'>
-                        <Link to='/auth/forgot' className='text-sm text-purple-900'>忘记密码？</Link>
-                    </div>
-                    <Form.Item>
-                        <Button block type="primary" htmlType="submit" className='my-5'>
-                            登录账户
-                        </Button>
-                        <div className='text-center'>
-                            还没有账户？<Link to='/auth/register' className='text-purple-900'>去注册</Link>
-                        </div>
-                    </Form.Item>
-                </Form>
+        <div className="w-full max-w-sm">
+            <Link to="/" className="mb-6 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#569080]">
+                <SwapLeftOutlined />返回首页
+            </Link>
+            <div className="mb-6">
+                <div className="text-2xl font-semibold text-gray-800">登录您的账户</div>
+                <div className="mt-1 text-sm text-gray-500">请输入您的登录信息</div>
             </div>
+            <Form
+                name="login"
+                layout="vertical"
+                initialValues={{ remember: true }}
+                onFinish={onFinish}
+                className="w-full"
+            >
+                <Form.Item
+                    label="用户名或邮箱"
+                    name="username"
+                    rules={[{ required: true, message: '请输入用户名或邮箱' }]}
+                >
+                    <Input placeholder="请输入用户名或邮箱" size="large" />
+                </Form.Item>
+                <Form.Item
+                    label="密码"
+                    name="password"
+                    rules={[{ required: true, message: '请输入密码' }]}
+                >
+                    <Input.Password placeholder="请输入密码" size="large" />
+                </Form.Item>
+                <div className="mb-4 text-right">
+                    <Link to="/auth/forgot" className="text-sm text-[#569080] hover:underline">忘记密码？</Link>
+                </div>
+                <Form.Item className="mb-3">
+                    <Button block type="primary" htmlType="submit" size="large">
+                        登录账户
+                    </Button>
+                </Form.Item>
+                <div className="text-center text-sm text-gray-500">
+                    还没有账户？<Link to="/auth/register" className="text-[#569080] hover:underline">去注册</Link>
+                </div>
+            </Form>
         </div>
     )
 }
