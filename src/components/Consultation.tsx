@@ -1,5 +1,6 @@
 import { message } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { createChat, deleteSession, getAnalysisResult, getSessionDetail, getSessionsByPage } from '../apis/sessions'
 import AgentCard from './chat/AgentCard'
 import ChatHeader from './chat/ChatHeader'
@@ -13,6 +14,7 @@ import { generateUniqueId } from '../utils/stream'
 import { normalizeSessionId } from '../utils'
 
 export default function Consultation() {
+    const location = useLocation()
     const [isDisabled, setIsDisabled] = useState(false)
     const [msg, setMsg] = useState('')
     const [currentSession, setCurrentSession] = useState<newChatParam>()
@@ -56,6 +58,34 @@ export default function Consultation() {
     useEffect(() => {
         getSessionsList()
     }, [getSessionsList])
+
+    useEffect(() => {
+        const state = location.state as { sessionId?: number; sessionTitle?: string } | null
+        if (!state?.sessionId) return
+
+        const loadPendingSession = async () => {
+            abortStream()
+            getEmotion(state.sessionId!.toString())
+            setCurrentSession({
+                sessionId: state.sessionId!.toString(),
+                sessionTitle: state.sessionTitle || '会话',
+                status: 'ACTIVE',
+            })
+            setIsAiTyping(false)
+
+            try {
+                const res = await getSessionDetail(state.sessionId!.toString())
+                setChatList(res?.data && Array.isArray(res.data) ? res.data : [])
+            } catch (error) {
+                console.error('获取会话详情失败:', error)
+                setChatList([])
+                message.error('加载会话失败')
+            }
+        }
+
+        loadPendingSession()
+        window.history.replaceState({}, document.title)
+    }, [location.state, abortStream, getEmotion, setIsAiTyping])
 
     const createNewSession = async () => {
         try {

@@ -150,7 +150,7 @@ function BackLayout() {
                                 <Space>
                                     <Avatar
                                         icon={!userInfo?.avatar ? <UserOutlined /> : undefined}
-                                        src={userInfo?.avatar ? `${fileBaseUrl}/api${userInfo.avatar}` : undefined}
+                                        src={userInfo?.avatar ? `${fileBaseUrl}${userInfo.avatar}` : undefined}
                                     />
                                 </Space>
                             </a>

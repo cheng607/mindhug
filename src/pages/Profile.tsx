@@ -1,7 +1,7 @@
 import { Avatar, Card, Descriptions, List, message, Statistic } from 'antd'
 import { MessageOutlined, BookOutlined, UserOutlined } from '@ant-design/icons'
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { getSessionsByPage } from '../apis/sessions'
 import Loading from '../components/common/Loading'
 import { useUserStore } from '../store/userStore'
@@ -9,6 +9,7 @@ import type { sessionItemType } from '../types/sessionsType'
 import { fileBaseUrl } from '../config'
 
 export default function Profile() {
+    const navigate = useNavigate()
     const userInfo = useUserStore(state => state.userInfo)
     const [sessions, setSessions] = useState<sessionItemType[]>([])
     const [totalSessions, setTotalSessions] = useState(0)
@@ -39,7 +40,7 @@ export default function Profile() {
                     <Avatar
                         size={80}
                         icon={!userInfo?.avatar ? <UserOutlined /> : undefined}
-                        src={userInfo?.avatar ? `${fileBaseUrl}/api${userInfo.avatar}` : undefined}
+                        src={userInfo?.avatar ? `${fileBaseUrl}${userInfo.avatar}` : undefined}
                     />
                     <div>
                         <h2 className="text-2xl font-bold mb-1">{userInfo?.nickname || userInfo?.username}</h2>
@@ -89,7 +90,14 @@ export default function Profile() {
                                         </>
                                     }
                                 />
-                                <Link to="/consultation">继续对话</Link>
+                                <a
+                                    className="text-[#589081] cursor-pointer"
+                                    onClick={() => navigate('/consultation', {
+                                        state: { sessionId: item.id, sessionTitle: item.sessionTitle }
+                                    })}
+                                >
+                                    继续对话
+                                </a>
                             </List.Item>
                         )}
                     />

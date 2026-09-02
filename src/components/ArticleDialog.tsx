@@ -1,6 +1,6 @@
 import { Form, Input, message, Modal, Select, Upload } from "antd";
 import type { articleType, categoryType } from "../types/articleType";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { uploadFile } from "../apis/other";
 import { fileBaseUrl } from "../config/index";
 import RichText from "./RichText";
@@ -28,6 +28,22 @@ export default function ArticleDialog({
 }: ArticleDialogProps) {
     const [form] = Form.useForm(); // 获取表单实例
     const [uploadImg, setUploadImg] = useState<string>('')
+
+    useEffect(() => {
+        if (visible && initialValues) {
+            form.setFieldsValue(initialValues);
+            if (initialValues.coverImage) {
+                const path = initialValues.coverImage;
+                setUploadImg(path.startsWith('http') ? path : `${fileBaseUrl}${path}`);
+            } else {
+                setUploadImg('');
+            }
+        } else if (!visible) {
+            setUploadImg('');
+            form.resetFields();
+        }
+    }, [visible, initialValues, form]);
+
     // 弹窗确认提交
     const handleOk = async () => {
         try {
@@ -56,6 +72,7 @@ export default function ArticleDialog({
     // 弹窗取消
     const handleCancel = () => {
         form.resetFields();
+        setUploadImg('');
         onCancel();
     };
     // 标签选项

@@ -1,13 +1,15 @@
 import { Button, Form, Input, message } from 'antd';
 import type { LoginParams } from '../types/userType';
 import { login } from '../apis/user';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useUserStore } from '../store/userStore';
 import { SwapLeftOutlined } from '@ant-design/icons';
 
 export default function LoginForm() {
     const navigate = useNavigate()
+    const location = useLocation()
     const setUserInfo = useUserStore(state => state.setUserInfo)
+    const from = (location.state as { from?: { pathname: string } })?.from?.pathname
     const onFinish = async (values: LoginParams) => {
         try {
             const res = await login(values);
@@ -23,7 +25,7 @@ export default function LoginForm() {
             if (res.data.roleType == '2') {
                 navigate('/back')
             } else if (res.data.roleType == '1') {
-                navigate('/')
+                navigate(from || '/')
             }
         } catch (error) {
             message.error((error as Error).message || '登录失败，请重试');

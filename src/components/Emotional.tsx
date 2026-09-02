@@ -5,6 +5,13 @@ import { deleteDiary, getDiary } from "../apis/emotion";
 import type { aiDataType, diaryParamType, diaryType } from "../types/emotionType";
 import { parseAiEmotionAnalysis } from "../utils/emotion";
 
+const RISK_LABELS: Record<number, string> = {
+    0: '正常',
+    1: '需关注',
+    2: '中度风险',
+    3: '高风险',
+};
+
 export default function Emotional() {
     const [form] = Form.useForm()
     const [dairies, setDairiess] = useState<diaryType[]>([]);
@@ -237,9 +244,11 @@ export default function Emotional() {
                 <Descriptions title="AI情绪分析结果" bordered column={2} >
                     <Descriptions.Item label="主要情绪">{aiData?.primaryEmotion}</Descriptions.Item>
                     <Descriptions.Item label="情绪强度">
-                        <Progress percent={aiData?.emotionScore} />
+                        <Progress percent={Math.round((aiData?.emotionScore ?? 0) * 100)} />
                     </Descriptions.Item>
-                    <Descriptions.Item label="风险等级">{aiData?.riskLevel ? '高风险' : '正常'}</Descriptions.Item>
+                    <Descriptions.Item label="风险等级">
+                        {RISK_LABELS[aiData?.riskLevel ?? 0] ?? '未知'}
+                    </Descriptions.Item>
                     <Descriptions.Item label="情绪性质">{aiData?.isNegative ? '负面情绪' : '正面情绪'}</Descriptions.Item>
                 </Descriptions>
                 <div className="bg-[#F7FAF9] p-3 rounded-lg my-4">
