@@ -140,6 +140,7 @@ async def get_session_emotion(
     try:
         content = service.get_session_user_content(sid, current_user)
         data = await analyze_session_emotion(content)
+        service.update_emotion_tag(sid, current_user.id, data.primaryEmotion)
         if data.riskLevel >= 2:
             RiskAlertService(db).create_alert(
                 user_id=current_user.id,

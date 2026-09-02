@@ -34,7 +34,10 @@ cp .env.production.example .env
 
 ### 2.3 启动服务
 
+**发布前建议先校验 Compose 配置：**
+
 ```bash
+docker compose config   # 校验语法，不启动容器
 docker compose up -d --build
 ```
 
@@ -55,7 +58,7 @@ Nginx (frontend:80)
     ├── /api/*     → backend:8000
     └── /uploads/* → backend:8000
          │
-         ├── PostgreSQL (pgvector)
+         ├── PostgreSQL (pgvector，迁移 `alembic upgrade head` 启用向量列)
          └── Redis
 ```
 

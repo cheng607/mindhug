@@ -93,7 +93,7 @@ MindHug 平台
 └── 后端服务
     ├── API Gateway（认证、限流、路由）
     ├── 业务服务（用户/会话/日记/文章/统计）
-    ├── AI 编排引擎（LangGraph 多 Agent 调度）
+    ├── AI 编排引擎（轻量多 Agent 状态机调度）
     ├── 向量检索服务（知识库 RAG）
     └── 基础设施（PostgreSQL、Redis、对象存储、消息队列）
 ```
@@ -103,7 +103,7 @@ MindHug 平台
 | 特征 | 现状 | 目标形态 |
 |------|------|----------|
 | 后端 | 外部黑盒 API | 自研 FastAPI 服务，完全可控 |
-| AI | 单 Agent 直连 | LangGraph 多 Agent 编排，可观测 |
+| AI | 单 Agent 直连 | 轻量多 Agent 编排（graph.py），可观测 |
 | 知识 | 静态文章列表 | RAG 增强，AI 可引用知识库回答 |
 | 情绪分析 | 会话结束后单次调用 | 实时 + 事后双层分析，日记联动 |
 | 危机处理 | 仅 UI 展示 | 规则引擎 + 固定干预流程 + 管理端预警 |
@@ -132,7 +132,7 @@ flowchart TB
     end
 
     subgraph AI["AI 编排层"]
-        I[LangGraph Orchestrator]
+        I[Agent Orchestrator]
         J[分诊 Agent]
         K[倾听/咨询 Agent]
         L[危机 Agent]
@@ -170,8 +170,8 @@ flowchart TB
 ORM:      SQLAlchemy 2.0 + Alembic
 数据库:   PostgreSQL 15
 缓存:     Redis 7
-AI 编排:  LangGraph + LangChain
-向量库:   pgvector（初期）/ Qdrant（后期）
+AI 编排:  自研轻量状态机（graph.py）
+向量库:   pgvector（PostgreSQL）/ JSON 内存检索（SQLite 测试）
 LLM:      DeepSeek / 通义千问 / OpenAI（可切换）
 前端:     React 19 + Vite + Ant Design 6
 部署:     Docker Compose → 云服务器
@@ -344,7 +344,7 @@ Week 2: 情绪分析
 
 ```
 Week 1: Agent 基础架构
-├── LangGraph 状态机设计
+├── 多 Agent 状态机设计（graph.py）
 ├── 定义 AgentState（messages, emotion, risk_level, active_agent）
 ├── 实现 Router Agent（意图分类）
 └── Agent 执行日志与 tracing
@@ -438,11 +438,11 @@ Week 3: 部署与工程化
                      ▼
 ┌─ 后端 Session Service ────────────────────────┐
 │  3. 鉴权 → 保存用户消息到 DB                  │
-│  4. 调用 LangGraph Orchestrator              │
+│  4. 调用 Agent Orchestrator                  │
 └────────────────────┬──────────────────────────┘
                      │
                      ▼
-┌─ LangGraph ───────────────────────────────────┐
+┌─ Agent 编排层 ─────────────────────────────────┐
 │  5. Router Agent → 意图: "情绪倾诉+求助"      │
 │  6. 倾听 Agent → 共情回应（流式）             │
 │  7. 咨询 Agent → 睡眠建议（流式）             │
@@ -524,7 +524,7 @@ Week 3: 部署与工程化
 
 #### Sprint 6（W11–W12）：多 Agent 基础
 
-- [x] LangGraph 状态机搭建
+- [x] 多 Agent 状态机搭建（graph.py）
 - [x] Router Agent（意图分类：倾诉/咨询/危机/知识）
 - [x] 倾听 Agent + 咨询 Agent 实现
 - [x] 危机 Agent（关键词规则 + LLM 检测）
@@ -581,7 +581,7 @@ mindHug/
 │   │   │   ├── analytics.py
 │   │   │   └── files.py
 │   │   ├── agents/              # 多 Agent 编排
-│   │   │   ├── graph.py         # LangGraph 主图
+│   │   │   ├── graph.py         # 多 Agent 编排主图
 │   │   │   ├── router.py
 │   │   │   ├── listener.py
 │   │   │   ├── counselor.py

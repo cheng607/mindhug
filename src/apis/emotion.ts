@@ -2,6 +2,10 @@ import type { diaryData, diaryFormData, diaryParamType } from "../types/emotionT
 import type { ApiResponse } from "../types/userType"
 import { request } from "../utils/request"
 
+export const getMyDiaries = (params: { currentPage?: string; size?: string }): Promise<ApiResponse<diaryData>> => {
+    return request.get('/emotion-diary/my/page', params)
+}
+
 export const getDiary = (params: diaryParamType): Promise<ApiResponse<diaryData>> => {
     return request.get('/emotion-diary/admin/page', params)
 }

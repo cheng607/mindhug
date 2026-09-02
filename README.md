@@ -70,6 +70,9 @@ npm run build
 cd backend
 pip install -r requirements.txt -r requirements-dev.txt
 pytest tests/ -v
+
+# 可选：真实 LLM 集成测试（需 API Key，默认跳过）
+# LLM_PROVIDER=deepseek LLM_API_KEY=sk-xxx pytest tests/test_llm_optional.py -v -m llm
 ```
 
 CI 工作流：`.github/workflows/ci.yml`（push/PR 自动运行 lint + build + test）
@@ -109,7 +112,7 @@ mindHug/
 |----|------|
 | 前端 | React 19 + Vite + Ant Design 6 + Zustand |
 | 后端 | Python 3.11 + FastAPI + SQLAlchemy 2.0 |
-| 数据库 | PostgreSQL 15 + pgvector |
+| 数据库 | PostgreSQL 15 + pgvector（RAG 向量检索，SQLite 测试回退内存检索） |
 | 缓存 | Redis 7 |
 | AI | 轻量多 Agent 编排 + SSE 流式 |
 | 部署 | Docker Compose + Nginx |

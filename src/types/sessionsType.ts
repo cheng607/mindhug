@@ -13,6 +13,7 @@ export interface sessionType {
     startedAt: string
     userId: number
     userNickname: string
+    emotionTag?: string
 }
 
 export interface sessionData {

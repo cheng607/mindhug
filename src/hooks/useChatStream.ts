@@ -139,6 +139,7 @@ export function useChatStream(options: UseChatStreamOptions = {}) {
                     console.error('SSE错误:', error)
                     setIsAiTyping(false)
                     message.error('连接中断，请重试')
+                    throw error
                 }
             })
         } catch (error) {

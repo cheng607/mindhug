@@ -44,6 +44,20 @@ def create_diary(
     )
 
 
+@router.get("/my/page")
+def list_my_diaries(
+    currentPage: str | None = Query("1"),
+    size: str | None = Query("10"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    service = DiaryService(db)
+    page = _parse_page(currentPage, 1)
+    page_size = _parse_page(size, 10)
+    data = service.list_my_diaries(current_user, page_num=page, page_size=page_size)
+    return success_response(data=data.model_dump(), msg="查询成功")
+
+
 @router.get("/admin/page")
 def list_admin_diaries(
     currentPage: str | None = Query("1"),

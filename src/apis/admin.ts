@@ -1,5 +1,5 @@
 import type { ApiResponse } from '../types/userType'
-import type { AgentPromptConfigType, RiskAlertPageType, RiskAlertType } from '../types/adminType'
+import type { AgentPromptConfigType, RiskAlertPageType, RiskAlertType, AgentLogPageType } from '../types/adminType'
 import { request } from '../utils/request'
 
 export const getRiskAlerts = (params: {
@@ -35,4 +35,28 @@ export const updateAgentConfig = (
 
 export const reindexKnowledge = (): Promise<ApiResponse<{ chunkCount: number }>> => {
     return request.post('/admin/rag/reindex')
+}
+
+export const getAdminSessions = (params: {
+    currentPage?: string
+    size?: string
+    emotionTag?: string
+    userId?: string
+}): Promise<ApiResponse<import('../types/sessionsType').sessionData>> => {
+    return request.get('/admin/sessions', params)
+}
+
+export const getAdminSessionMessages = (
+    sessionId: string
+): Promise<ApiResponse<import('../types/sessionsType').sessionDetailType[]>> => {
+    return request.get(`/admin/sessions/${sessionId}/messages`)
+}
+
+export const getAgentLogs = (params: {
+    pageNum?: string
+    pageSize?: string
+    intent?: string
+    userId?: string
+}): Promise<ApiResponse<AgentLogPageType>> => {
+    return request.get('/admin/agent-logs', params)
 }

@@ -3,11 +3,12 @@ import {
     FrownFilled, EyeInvisibleOutlined, BulbTwoTone,
     ExclamationCircleOutlined, QuestionCircleOutlined
 } from '@ant-design/icons'
-import { Form, Rate, Radio, Input, message } from 'antd'
+import { Form, Rate, Radio, Input, message, Table, Tag } from 'antd'
 import type { RadioChangeEvent } from 'antd'
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import dayjs from 'dayjs'
-import { addDiary } from '../apis/emotion'
+import { addDiary, getMyDiaries } from '../apis/emotion'
+import type { diaryType } from '../types/emotionType'
 
 // 情绪选项配置
 const emotions = [
@@ -24,10 +25,37 @@ const emotions = [
 // 情绪评分描述映射
 const rateDescriptions = ['极差', '低落不悦', '不太好', '一般', '平平', '还行', '不错', '开心', '很开心', '超棒']
 
+const emotionLabelMap: Record<string, string> = {
+    happy: '开心', calm: '平静', anxious: '焦虑', sad: '悲伤',
+    excited: '兴奋', tired: '疲惫', surprised: '惊讶', confused: '困惑',
+}
+
 export default function Diary() {
     const [form] = Form.useForm()
     const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null)
     const [currentRate, setCurrentRate] = useState<number>(0)
+    const [history, setHistory] = useState<diaryType[]>([])
+    const [historyTotal, setHistoryTotal] = useState(0)
+    const [historyPage, setHistoryPage] = useState(1)
+    const [historyPageSize, setHistoryPageSize] = useState(5)
+    const [historyLoading, setHistoryLoading] = useState(false)
+
+    const fetchHistory = useCallback(async (page = historyPage, size = historyPageSize) => {
+        try {
+            setHistoryLoading(true)
+            const res = await getMyDiaries({ currentPage: page.toString(), size: size.toString() })
+            setHistory(res.data.records || [])
+            setHistoryTotal(res.data.total || 0)
+        } catch (error) {
+            console.error('获取日记历史失败', error)
+        } finally {
+            setHistoryLoading(false)
+        }
+    }, [historyPage, historyPageSize])
+
+    useEffect(() => {
+        fetchHistory()
+    }, [fetchHistory])
 
     const onEmotionChange = (e: RadioChangeEvent) => {
         setSelectedEmotion(e.target.value)
@@ -55,6 +83,8 @@ export default function Diary() {
             form.resetFields()
             setSelectedEmotion(null)
             setCurrentRate(0)
+            fetchHistory(1, historyPageSize)
+            setHistoryPage(1)
         } catch (error) {
             message.error('提交失败，请稍后再试。')
             console.error('addDiary error', error)
@@ -221,6 +251,47 @@ export default function Diary() {
                     </button>
                 </Form.Item>
             </Form>
+
+            <div className='w-3/5 mx-auto mt-8 mb-10'>
+                <div className='text-2xl font-bold mb-4'>我的日记历史</div>
+                <Table
+                    dataSource={history}
+                    rowKey="id"
+                    loading={historyLoading}
+                    pagination={{
+                        current: historyPage,
+                        pageSize: historyPageSize,
+                        total: historyTotal,
+                        showSizeChanger: true,
+                        showTotal: (t) => `共 ${t} 条`,
+                        onChange: (page, size) => {
+                            setHistoryPage(page)
+                            setHistoryPageSize(size)
+                            fetchHistory(page, size)
+                        },
+                    }}
+                    locale={{ emptyText: '暂无日记记录' }}
+                    columns={[
+                        { title: '日期', dataIndex: 'diaryDate', key: 'diaryDate', width: 120 },
+                        {
+                            title: '情绪',
+                            dataIndex: 'dominantEmotion',
+                            key: 'dominantEmotion',
+                            width: 80,
+                            render: (val: string) => <Tag>{emotionLabelMap[val] || val}</Tag>,
+                        },
+                        {
+                            title: '评分',
+                            dataIndex: 'moodScore',
+                            key: 'moodScore',
+                            width: 160,
+                            render: (val: number) => <Rate disabled value={val} count={10} />,
+                        },
+                        { title: '触发因素', dataIndex: 'emotionTriggers', key: 'emotionTriggers', ellipsis: true },
+                        { title: '感想', dataIndex: 'diaryContent', key: 'diaryContent', ellipsis: true },
+                    ]}
+                />
+            </div>
         </div>
     )
 }

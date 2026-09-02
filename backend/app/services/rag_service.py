@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.models.article_chunk import ArticleChunk
 from app.models.knowledge_article import STATUS_PUBLISHED, KnowledgeArticle
 from app.services.embedding_service import cosine_similarity, embedding_service, parse_embedding
+from app.services.pgvector_utils import pgvector_search_enabled, set_chunk_embedding_vec
 
 logger = logging.getLogger(__name__)
 
@@ -74,15 +75,17 @@ class RAGService:
         embeddings = await embedding_service.embed_batch(texts)
 
         for index, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
-            self.db.add(
-                ArticleChunk(
-                    article_id=article.id,
-                    chunk_index=index,
-                    chunk_text=chunk,
-                    article_title=article.title,
-                    embedding=json.dumps(embedding),
-                )
+            row = ArticleChunk(
+                article_id=article.id,
+                chunk_index=index,
+                chunk_text=chunk,
+                article_title=article.title,
+                embedding=json.dumps(embedding),
             )
+            self.db.add(row)
+            if pgvector_search_enabled(self.db):
+                self.db.flush()
+                set_chunk_embedding_vec(self.db, row.id, embedding)
         self.db.commit()
         return len(chunks)
 
@@ -98,6 +101,49 @@ class RAGService:
         return total
 
     async def search(self, query: str, top_k: int = 3) -> list[RAGCitation]:
+        if pgvector_search_enabled(self.db):
+            try:
+                results = await self._search_pgvector(query, top_k)
+                if results:
+                    return results
+            except Exception as exc:
+                logger.warning("pgvector 检索失败，回退内存检索: %s", exc)
+        return await self._search_memory(query, top_k)
+
+    async def _search_pgvector(self, query: str, top_k: int) -> list[RAGCitation]:
+        from sqlalchemy import text
+
+        query_vec = await embedding_service.embed_text(query)
+        vec_str = "[" + ",".join(str(float(x)) for x in query_vec) + "]"
+        rows = self.db.execute(
+            text(
+                """
+                SELECT ac.article_id, ac.article_title, ac.chunk_text,
+                       1 - (ac.embedding_vec <=> CAST(:qvec AS vector)) AS score
+                FROM article_chunks ac
+                INNER JOIN knowledge_articles ka ON ka.id = ac.article_id
+                WHERE ka.status = :published AND ac.embedding_vec IS NOT NULL
+                ORDER BY ac.embedding_vec <=> CAST(:qvec AS vector)
+                LIMIT :top_k
+                """
+            ),
+            {"qvec": vec_str, "published": STATUS_PUBLISHED, "top_k": top_k},
+        ).fetchall()
+
+        results: list[RAGCitation] = []
+        for row in rows:
+            snippet = row.chunk_text[:120] + ("..." if len(row.chunk_text) > 120 else "")
+            results.append(
+                RAGCitation(
+                    article_id=row.article_id,
+                    title=row.article_title,
+                    snippet=snippet,
+                    score=float(row.score),
+                )
+            )
+        return results
+
+    async def _search_memory(self, query: str, top_k: int) -> list[RAGCitation]:
         query_vec = await embedding_service.embed_text(query)
         chunks = (
             self.db.query(ArticleChunk)

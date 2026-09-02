@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
-import { getSessionDetail, getSessions } from "../apis/sessions";
+import { Link } from "react-router-dom";
+import { BookOutlined } from "@ant-design/icons";
+import ReactMarkdown from 'react-markdown';
+import remarkBreaks from 'remark-breaks';
+import remarkGfm from 'remark-gfm';
+import { getAdminSessionMessages, getAdminSessions } from "../apis/admin";
 import type { sessionDetailType, sessionType } from "../types/sessionsType";
-import { Button, Modal, Space, Table, message } from "antd";
+import { Button, Modal, Space, Table, Tag, message } from "antd";
 import type { TablePaginationConfig } from "antd/es/table";
 
 export default function Consultations() {
@@ -15,52 +20,54 @@ export default function Consultations() {
     const [visible, setVisible] = useState<boolean>(false);
     const columns = [
         {
-            title: '会话ID',
+            title: '用户',
             dataIndex: 'userNickname',
             key: 'userNickname',
-            width: 80,
-            render: (_: unknown, record: sessionType) => {
-                return (
-                    <div className="rounded-full bg-gray-300 w-14 h-14 flex items-center justify-center">
-                        {record.userNickname}
-                    </div>
-                );
-            }
+            width: 100,
+            render: (_: unknown, record: sessionType) => (
+                <div className="rounded-full bg-gray-300 w-14 h-14 flex items-center justify-center text-sm">
+                    {record.userNickname?.charAt(0) || '?'}
+                </div>
+            )
+        },
+        {
+            title: '会话主题',
+            dataIndex: 'sessionTitle',
+            key: 'sessionTitle',
+            render: (_: unknown, record: sessionType) => (
+                <div className="text-gray-600">
+                    <p className="font-medium">{record.sessionTitle}</p>
+                    <p className="text-sm text-gray-400 truncate">{record.lastMessageContent}</p>
+                </div>
+            )
         },
         {
             title: '情绪标签',
-            dataIndex: 'startedAt',
-            key: 'startedAt',
-            width: 400,
-            render: (_: unknown, record: sessionType) => {
-                return (
-                    <div className="text-gray-600">
-                        <p>{record.sessionTitle}</p>
-                        <p>{record.lastMessageContent}</p>
-                    </div>
-                );
-            }
+            dataIndex: 'emotionTag',
+            key: 'emotionTag',
+            width: 100,
+            render: (tag: string) => tag ? <Tag>{tag}</Tag> : <span className="text-gray-400">-</span>
         },
         {
             title: '消息数',
             dataIndex: 'messageCount',
             key: 'messageCount',
-            width: 50,
+            width: 80,
             align: 'center' as const,
         },
         {
-            title: '时间',
+            title: '开始时间',
             dataIndex: 'startedAt',
             key: 'startedAt',
-            width: 50,
+            width: 180,
             align: 'center' as const,
+            render: (val: string) => val ? val.replace('T', ' ').slice(0, 19) : '-'
         },
         {
             title: '操作',
             key: 'action',
-            width: 50,
+            width: 80,
             align: 'center' as const,
-            // 操作按钮组
             render: (_: unknown, record: sessionType) => (
                 <Space size="small">
                     <Button
@@ -77,12 +84,10 @@ export default function Consultations() {
     const fetchSessions = async (page: number, size: number) => {
         try {
             setLoading(true);
-            const params = {
+            const res = await getAdminSessions({
                 currentPage: page.toString(),
                 size: size.toString(),
-                emotionTag: ''
-            }
-            const res = await getSessions(params)
+            })
             setTotal(res.data.total)
             setSessionList(res.data.records)
         } catch (error) {
@@ -102,10 +107,10 @@ export default function Consultations() {
         if (current) setCurrentPage(current);
         if (size) setPageSize(size);
     }
-    // 获取文章详情
+
     const handleDetail = async (sessionId: string, session: sessionType) => {
         try {
-            const res = await getSessionDetail(sessionId);
+            const res = await getAdminSessionMessages(sessionId);
             setCurrentDetail(res.data)
             setCurrentSession(session)
             setVisible(true);
@@ -149,6 +154,9 @@ export default function Consultations() {
                     <div><span className="inline-block w-24">用户：</span>{currentSession?.userNickname}</div>
                     <div><span className="inline-block w-24">开始时间：</span>{currentSession?.startedAt}</div>
                     <div><span className="inline-block w-24">消息数：</span>{currentSession?.messageCount}条</div>
+                    {currentSession?.emotionTag && (
+                        <div><span className="inline-block w-24">情绪标签：</span>{currentSession.emotionTag}</div>
+                    )}
                 </div>
                 <div className="text-lg my-4">对话记录</div>
                 <div>
@@ -158,7 +166,37 @@ export default function Consultations() {
                                 <div>{detail.senderTypeDesc}</div>
                                 <div className="text-sm text-gray-500">{detail.createdAt}</div>
                             </div>
-                            <div className="text-gray-600">{detail.content}</div>
+                            <div className="text-gray-600">
+                                {detail.senderType === 2 ? (
+                                    <div className="whitespace-pre-wrap break-words [&_p]:my-1 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-1">
+                                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+                                            {detail.content || ''}
+                                        </ReactMarkdown>
+                                    </div>
+                                ) : (
+                                    <span className="whitespace-pre-wrap">{detail.content}</span>
+                                )}
+                            </div>
+                            {detail.citations && detail.citations.length > 0 && (
+                                <div className="mt-2 pt-2 border-t border-orange-200">
+                                    <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                                        <BookOutlined />
+                                        <span>参考来源</span>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        {detail.citations.map((cite, index) => (
+                                            <Link
+                                                key={`${cite.articleId}-${index}`}
+                                                to={`/article/${cite.articleId}`}
+                                                className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                                                target="_blank"
+                                            >
+                                                《{cite.title}》
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>

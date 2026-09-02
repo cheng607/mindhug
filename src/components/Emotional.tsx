@@ -62,19 +62,19 @@ export default function Emotional() {
     // 表格列配置
     const columns = [
         {
-            title: 'ID',
-            dataIndex: 'userId',
-            key: 'userId',
-            width: 40
+            title: '日记ID',
+            dataIndex: 'id',
+            key: 'id',
+            width: 80
         },
         {
-            title: '会话ID',
+            title: '用户',
             key: 'username',
             width: 100,
             render: (_: unknown, record: diaryType) => {
                 return (
                     <div className="rounded-full bg-gray-300 w-14 h-14 flex items-center justify-center text-white">
-                        {record.username}
+                        {record.username?.charAt(0) || '?'}
                     </div>
                 );
             }
@@ -97,7 +97,7 @@ export default function Emotional() {
             }
         },
         {
-            title: '生活指标',
+            title: '睡眠/压力',
             dataIndex: 'dominantEmotion',
             key: 'dominantEmotion',
             render: (_: unknown, record: diaryType) => {

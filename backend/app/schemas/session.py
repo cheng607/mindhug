@@ -26,6 +26,7 @@ class SessionItemResponse(BaseModel):
     sessionTitle: str
     userId: int
     userNickname: str
+    emotionTag: str = ""
     startedAt: str
     lastMessageTime: str
     lastMessageContent: str

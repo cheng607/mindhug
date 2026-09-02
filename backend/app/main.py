@@ -10,7 +10,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.api.admin_sessions import router as admin_sessions_router
 from app.api.agent_config import router as agent_config_router
+from app.api.agent_logs import router as agent_logs_router
 from app.api.analytics import router as analytics_router
 from app.api.diary import router as diary_router
 from app.api.files import router as files_router
@@ -127,6 +129,8 @@ app.include_router(knowledge_router, prefix="/api")
 app.include_router(files_router, prefix="/api")
 app.include_router(analytics_router, prefix="/api")
 app.include_router(risk_alerts_router, prefix="/api")
+app.include_router(admin_sessions_router, prefix="/api")
+app.include_router(agent_logs_router, prefix="/api")
 app.include_router(agent_config_router, prefix="/api")
 app.include_router(rag_router, prefix="/api")
 app.include_router(legal_router, prefix="/api")

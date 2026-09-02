@@ -1,4 +1,4 @@
-"""LangGraph 风格多 Agent 编排图（轻量状态机实现）。"""
+"""轻量多 Agent 编排图（自研状态机实现）。"""
 import asyncio
 import json
 import logging

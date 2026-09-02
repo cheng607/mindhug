@@ -39,3 +39,24 @@ export interface AgentPromptConfigType {
     maxTokens: number
     isActive: number
 }
+
+export interface AgentLogType {
+    id: number
+    sessionId: number
+    userId: number
+    userNickname: string
+    userMessage: string
+    intent: string
+    activeAgent: string
+    latencyMs: number
+    llmUsed: boolean
+    createdAt: string
+}
+
+export interface AgentLogPageType {
+    records: AgentLogType[]
+    total: number
+    size: number
+    current: number
+    pages: number
+}

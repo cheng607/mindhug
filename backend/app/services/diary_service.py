@@ -111,6 +111,35 @@ class DiaryService:
         diary.ai_analysis_updated_at = now
         self.db.commit()
 
+    def list_my_diaries(
+        self,
+        user: User,
+        page_num: int = 1,
+        page_size: int = 10,
+    ) -> DiaryPageResponse:
+        query = self.db.query(EmotionDiary).filter(EmotionDiary.user_id == user.id)
+
+        total = query.count()
+        pages = max(math.ceil(total / page_size), 1) if page_size else 1
+        current = min(max(page_num, 1), pages) if total else 1
+        offset = (current - 1) * page_size
+
+        diaries = (
+            query.order_by(desc(EmotionDiary.diary_date), desc(EmotionDiary.id))
+            .offset(offset)
+            .limit(page_size)
+            .all()
+        )
+
+        records = [build_diary_item(item, user) for item in diaries]
+        return DiaryPageResponse(
+            records=records,
+            total=total,
+            size=page_size,
+            current=current,
+            pages=pages,
+        )
+
     def list_admin_diaries(
         self,
         page_num: int = 1,

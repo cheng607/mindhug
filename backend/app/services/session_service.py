@@ -4,7 +4,7 @@ import json
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import desc
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.models.chat_session import SENDER_AI, SENDER_USER, ChatSession
 from app.models.message import Message
@@ -68,6 +68,7 @@ def build_session_item(session: ChatSession, user: User) -> SessionItemResponse:
         sessionTitle=session.session_title,
         userId=session.user_id,
         userNickname=user.display_name,
+        emotionTag=session.emotion_tag or "",
         startedAt=_to_iso(session.started_at),
         lastMessageTime=_to_iso(session.last_message_time or session.started_at),
         lastMessageContent=session.last_message_content or "",
@@ -89,6 +90,43 @@ class SessionService:
 
     def session_exists_for_user(self, session_id: int, user: User) -> bool:
         return self._get_owned_session(session_id, user.id) is not None
+
+    def list_admin_sessions(
+        self,
+        page_num: int = 1,
+        page_size: int = 20,
+        emotion_tag: str = "",
+        user_id: str | None = None,
+    ) -> SessionPageResponse:
+        query = self.db.query(ChatSession).options(joinedload(ChatSession.user))
+        if emotion_tag:
+            query = query.filter(ChatSession.emotion_tag == emotion_tag)
+        if user_id:
+            try:
+                query = query.filter(ChatSession.user_id == int(user_id))
+            except ValueError:
+                pass
+
+        total = query.count()
+        pages = max(math.ceil(total / page_size), 1) if page_size else 1
+        current = min(max(page_num, 1), pages) if total else 1
+        offset = (current - 1) * page_size
+
+        sessions = (
+            query.order_by(desc(ChatSession.last_message_time), desc(ChatSession.id))
+            .offset(offset)
+            .limit(page_size)
+            .all()
+        )
+
+        records = [build_session_item(item, item.user) for item in sessions]
+        return SessionPageResponse(
+            records=records,
+            total=total,
+            size=page_size,
+            current=current,
+            pages=pages,
+        )
 
     def list_sessions(
         self,
@@ -161,7 +199,15 @@ class SessionService:
         session = self._get_owned_session(session_id, user.id)
         if not session:
             raise ValueError("会话不存在或无权访问")
+        return self._get_session_messages(session_id)
 
+    def get_messages_admin(self, session_id: int) -> list[MessageResponse]:
+        session = self.db.query(ChatSession).filter(ChatSession.id == session_id).first()
+        if not session:
+            raise ValueError("会话不存在")
+        return self._get_session_messages(session_id)
+
+    def _get_session_messages(self, session_id: int) -> list[MessageResponse]:
         messages = (
             self.db.query(Message)
             .filter(Message.session_id == session_id)
@@ -169,6 +215,13 @@ class SessionService:
             .all()
         )
         return [build_message_response(item) for item in messages]
+
+    def update_emotion_tag(self, session_id: int, user_id: int, emotion_tag: str) -> None:
+        session = self._get_owned_session(session_id, user_id)
+        if not session:
+            return
+        session.emotion_tag = emotion_tag
+        self.db.commit()
 
     def delete_session(self, session_id: int, user: User) -> None:
         session = self._get_owned_session(session_id, user.id)

@@ -14,6 +14,19 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src')
       }
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-antd': ['antd', '@ant-design/icons'],
+            'vendor-echarts': ['echarts'],
+            'vendor-editor': ['@wangeditor/editor', '@wangeditor/editor-for-react'],
+            'vendor-markdown': ['react-markdown', 'remark-gfm', 'remark-breaks'],
+          },
+        },
+      },
+    },
     server: {
       proxy: {
         '/api': {
