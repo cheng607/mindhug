@@ -48,6 +48,20 @@ async function api(path, options = {}) {
   return { res, json }
 }
 
+async function apiWithToken(path, token, options = {}) {
+  const res = await fetch(`${API}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      token,
+      ...(options.headers || {}),
+    },
+    body: options.body,
+  })
+  const json = await res.json()
+  return { res, json }
+}
+
 async function registerAndLogin(creds) {
   await api('/api/user/add', {
     method: 'POST',
@@ -200,6 +214,30 @@ async function main() {
     await page.getByRole('button', { name: '我知道了' }).click()
   })
 
+  await check('咨询：多轮对话 Agent 切换 + 消息顺序', async () => {
+    await setAuthStorage(page, userLogin, '1')
+    await page.goto(`${BASE}/consultation`)
+    await page.getByRole('button', { name: '新建会话' }).click().catch(() => {})
+    await page.waitForTimeout(500)
+
+    await sendChatMessage(page, '最近感觉好烦')
+    await waitForStreamDone(page)
+    await sendChatMessage(page, '工作不太顺利')
+    await waitForStreamDone(page)
+    await sendChatMessage(page, '面试总是失败，我该怎么办')
+    await waitForStreamDone(page)
+
+    await page.getByText(/咨询 Agent 正在服务/).waitFor({ timeout: 15000 })
+    const bodyText = await page.textContent('body')
+    if (!bodyText?.includes('烦') || !bodyText?.includes('工作') || !bodyText?.includes('面试')) {
+      throw new Error('多轮用户消息未完整展示')
+    }
+    const userBlocks = page.locator('.whitespace-pre-wrap').filter({ hasText: /烦|工作|面试/ })
+    if ((await userBlocks.count()) < 3) {
+      throw new Error('用户消息气泡数量不足')
+    }
+  })
+
   await check('情绪日记：提交成功', async () => {
     await setAuthStorage(page, userLogin, '1')
     await page.goto(`${BASE}/diary`)
@@ -252,6 +290,82 @@ async function main() {
     await page.getByRole('button', { name: /查询|搜索|新建|添加/ }).first().waitFor({ timeout: 10000 }).catch(() =>
       page.locator('.ant-table').waitFor()
     )
+  })
+
+  await check('管理端：知识文库发布/下架 E2E', async () => {
+    const articleTitle = `E2E发布测试_${suffix}`
+    const categories = (await api('/api/knowledge/category/tree')).json.data
+    const categoryId = categories[0]?.id
+    if (!categoryId) throw new Error('无知识分类')
+
+    const createResp = await apiWithToken('/api/knowledge/article', adminLogin.token, {
+      method: 'POST',
+      body: JSON.stringify({
+        categoryId,
+        title: articleTitle,
+        summary: 'E2E 发布下架测试',
+        content: '<p>测试正文</p>',
+        coverImage: '',
+        tags: ['E2E'],
+      }),
+    })
+    if (createResp.json.code !== '200') {
+      throw new Error(`创建草稿失败: ${createResp.json.message || createResp.json.code}`)
+    }
+    const articleId = createResp.json.data.id
+
+    const draftPublic = await api(`/api/knowledge/article/${articleId}`)
+    if (draftPublic.res.status !== 404 && draftPublic.json.code !== '404') {
+      throw new Error('草稿文章不应被公开访问')
+    }
+
+    await setAuthStorage(page, adminLogin, '2')
+    await page.goto(`${BASE}/back/Knowledge`)
+    await page.getByPlaceholder('请输入文章标题').waitFor({ timeout: 15000 })
+    await page.getByPlaceholder('请输入文章标题').fill(articleTitle)
+    await page.locator('button[type="submit"]').click()
+    await page.waitForTimeout(1500)
+
+    page.once('dialog', (dialog) => dialog.accept())
+    const draftRow = page.locator('tr').filter({ hasText: articleTitle })
+    await draftRow.waitFor({ timeout: 15000 })
+    await draftRow.getByRole('button', { name: '发布' }).click()
+    await page.getByText('发布文章成功').waitFor({ timeout: 10000 })
+
+    const published = await api(`/api/knowledge/article/${articleId}`)
+    if (published.json.data?.status !== 1) {
+      throw new Error('发布后 API 状态未变为已发布')
+    }
+
+    await setAuthStorage(page, userLogin, '1')
+    await page.goto(`${BASE}/article/${articleId}`)
+    await page.getByText(articleTitle).waitFor({ timeout: 15000 })
+
+    await setAuthStorage(page, adminLogin, '2')
+    await page.goto(`${BASE}/back/Knowledge`)
+    await page.getByPlaceholder('请输入文章标题').waitFor({ timeout: 15000 })
+    await page.getByPlaceholder('请输入文章标题').fill(articleTitle)
+    await page.locator('button[type="submit"]').click()
+    await page.waitForTimeout(1500)
+
+    page.once('dialog', (dialog) => dialog.accept())
+    await page.locator('tr').filter({ hasText: articleTitle }).getByRole('button', { name: '下线' }).click()
+    await page.getByText('下架文章成功').waitFor({ timeout: 10000 })
+
+    const unpublished = await api(`/api/knowledge/article/${articleId}`)
+    if (unpublished.res.status !== 404 && unpublished.json.code !== '404') {
+      throw new Error('下架后文章仍可从公开 API 访问')
+    }
+
+    await setAuthStorage(page, userLogin, '1')
+    await page.goto(`${BASE}/article/${articleId}`)
+    await page.waitForTimeout(2000)
+    const detailBody = await page.textContent('body')
+    if (detailBody?.includes(articleTitle)) {
+      throw new Error('下架后普通用户仍可在详情页看到文章标题')
+    }
+
+    await apiWithToken(`/api/knowledge/article/${articleId}`, adminLogin.token, { method: 'DELETE' })
   })
 
   await check('管理端：跨用户咨询记录', async () => {

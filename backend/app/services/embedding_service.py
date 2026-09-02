@@ -12,15 +12,13 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-EMBEDDING_DIM = 384
-
 
 def _normalize(vec: list[float]) -> list[float]:
     norm = math.sqrt(sum(x * x for x in vec)) or 1.0
     return [x / norm for x in vec]
 
 
-def mock_embed(text: str, dim: int = EMBEDDING_DIM) -> list[float]:
+def mock_embed(text: str, dim: int) -> list[float]:
     """无 API Key 时的确定性伪向量，便于本地测试与演示。"""
     vec: list[float] = []
     for i in range(dim):
@@ -34,8 +32,8 @@ def mock_embed(text: str, dim: int = EMBEDDING_DIM) -> list[float]:
 
 class EmbeddingService:
     def __init__(self) -> None:
-        self.dim = EMBEDDING_DIM
-        self.enabled = settings.llm_enabled
+        self.dim = settings.EMBEDDING_DIM
+        self.enabled = settings.embedding_enabled
 
     async def embed_text(self, text: str) -> list[float]:
         if not text.strip():
@@ -60,16 +58,23 @@ class EmbeddingService:
         }
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
-                f"{settings.llm_base_url}/embeddings",
+                f"{settings.embedding_base_url}/embeddings",
                 headers={
-                    "Authorization": f"Bearer {settings.LLM_API_KEY}",
+                    "Authorization": f"Bearer {settings.embedding_api_key}",
                     "Content-Type": "application/json",
                 },
                 json=payload,
             )
             response.raise_for_status()
             data = response.json()
-            return data["data"][0]["embedding"]
+            vec = [float(x) for x in data["data"][0]["embedding"]]
+            if len(vec) != self.dim:
+                logger.warning(
+                    "Embedding 维度 %s 与配置 EMBEDDING_DIM=%s 不一致，请调整配置并重建索引",
+                    len(vec),
+                    self.dim,
+                )
+            return vec
 
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:

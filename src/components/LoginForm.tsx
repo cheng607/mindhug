@@ -13,15 +13,7 @@ export default function LoginForm() {
     const onFinish = async (values: LoginParams) => {
         try {
             const res = await login(values);
-            if (!res.data.token) {
-                return Promise.reject(new Error('登录失败，未返回token'));
-            }
-            setUserInfo(res.data.userInfo, res.data.token, res.data.roleType)
-            // 登录成功
-            localStorage.setItem('token', res.data.token);
-            localStorage.setItem('userInfo', JSON.stringify(res.data.userInfo));
-            localStorage.setItem('roleType', res.data.roleType)
-            // 根据用户角色来跳转页面
+            setUserInfo(res.data.userInfo, res.data.roleType)
             if (res.data.roleType == '2') {
                 navigate('/back')
             } else if (res.data.roleType == '1') {
@@ -61,6 +53,9 @@ export default function LoginForm() {
                     >
                         <Input.Password placeholder="请输入密码" />
                     </Form.Item>
+                    <div className='text-right -mt-2 mb-2'>
+                        <Link to='/auth/forgot' className='text-sm text-purple-900'>忘记密码？</Link>
+                    </div>
                     <Form.Item>
                         <Button block type="primary" htmlType="submit" className='my-5'>
                             登录账户

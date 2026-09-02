@@ -10,6 +10,7 @@ os.environ.setdefault("DATABASE_URL", "sqlite:///./test_sprint6.db")
 os.environ.setdefault("LLM_PROVIDER", "mock")
 
 from app.agents.router import classify_intent  # noqa: E402
+from app.agents.types import IntentType  # noqa: E402
 from app.core.database import Base, SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models.agent_execution_log import AgentExecutionLog  # noqa: E402
@@ -75,8 +76,72 @@ def test_router_listen_intent():
     assert classify_intent("今天心情不太好，想找人聊聊") == "listen"
 
 
+def test_router_counsel_after_multi_turn():
+    from app.models.chat_session import SENDER_USER
+    from app.models.message import Message
+
+    history = [
+        Message(id=1, session_id=1, content="最近感觉好烦", sender_type=SENDER_USER, message_type=1),
+        Message(id=2, session_id=1, content="...", sender_type=2, message_type=1),
+        Message(id=3, session_id=1, content="工作不太顺利", sender_type=SENDER_USER, message_type=1),
+    ]
+    assert classify_intent("找工作不顺利，而且面试感觉总是有问题", history) == "counsel"
+
+
 def test_router_knowledge_impact_intent():
     assert classify_intent("下雨对情绪有什么影响") == "knowledge"
+
+
+def test_router_knowledge_tell_me_intent():
+    assert classify_intent("告诉我什么是焦虑症") == "knowledge"
+
+
+def test_router_off_topic_tech_intent():
+    assert classify_intent("告诉我前端技术") == "knowledge"
+    assert classify_intent("前端怎么学") == "knowledge"
+
+
+def test_router_share_not_knowledge():
+    assert classify_intent("今天心情不太好，想找人聊聊") == "listen"
+    assert classify_intent("最近好累，想说说心里话") == "listen"
+
+
+ROUTER_INTENT_SAMPLES: list[tuple[str, IntentType]] = [
+    ("我不想活了", "crisis"),
+    ("我想结束生命", "crisis"),
+    ("什么是焦虑症", "knowledge"),
+    ("告诉我什么是抑郁症", "knowledge"),
+    ("下雨对情绪有什么影响", "knowledge"),
+    ("焦虑的原因有哪些", "knowledge"),
+    ("最近压力很大，有什么建议吗", "counsel"),
+    ("失眠怎么办", "counsel"),
+    ("我该如何缓解焦虑", "counsel"),
+    ("今天心情不太好，想找人聊聊", "listen"),
+    ("最近好累，想说说心里话", "listen"),
+    ("感觉今天有点累啊", "listen"),
+    ("告诉我前端技术", "knowledge"),
+    ("React 框架怎么学", "knowledge"),
+    ("Python 编程入门", "knowledge"),
+    ("工作压力让我焦虑怎么办", "counsel"),
+    ("科普一下正念冥想", "knowledge"),
+    ("为什么我会突然很难过", "knowledge"),
+    ("好烦，没人理解我", "listen"),
+    ("面试总是失败，我该怎么办", "counsel"),
+]
+
+
+@pytest.mark.parametrize("message,expected", ROUTER_INTENT_SAMPLES)
+def test_router_intent_accuracy(message: str, expected: IntentType):
+    assert classify_intent(message) == expected
+
+
+def test_mock_off_topic_redirect():
+    from app.agents.mock_reply import build_mock_reply
+
+    reply = build_mock_reply("告诉我前端的技术", "listen")
+    assert "心理健康助手" in reply
+    assert "前端" in reply
+    assert "无力或委屈" not in reply
 
 
 def test_listen_mock_follow_up_differs():
@@ -91,7 +156,22 @@ def test_listen_mock_follow_up_differs():
     ]
     second = build_listen_mock("最近天气一直下雨，感觉工作也不是很顺利", history)
     assert first != second
-    assert "天气" in second or "工作" in second
+    assert "「" not in second  # 不再机械复述引号
+
+
+def test_listen_mock_links_context():
+    from app.agents.mock_reply import build_listen_mock
+    from app.models.chat_session import SENDER_AI, SENDER_USER
+    from app.models.message import Message
+
+    first = build_listen_mock("最近感觉好烦", [])
+    history = [
+        Message(id=1, session_id=1, content="最近感觉好烦", sender_type=SENDER_USER, message_type=1),
+        Message(id=2, session_id=1, content=first, sender_type=SENDER_AI, message_type=1),
+    ]
+    second = build_listen_mock("工作不太顺利", history)
+    assert "工作" in second or "烦" in second or "烦躁" in second
+    assert "叠加在一起" not in second
 
 
 def test_should_supplement_rag_for_counsel():

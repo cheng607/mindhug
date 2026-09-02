@@ -1,4 +1,5 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, Query
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -81,6 +82,29 @@ def list_admin_diaries(
         max_mood_score=_parse_optional_int(maxMoodScore),
     )
     return success_response(data=data.model_dump(), msg="查询成功")
+
+
+@router.get("/admin/export")
+def export_admin_diaries(
+    userId: str | None = Query(None),
+    dominantEmotion: str | None = Query(None),
+    minMoodScore: str | None = Query(None),
+    maxMoodScore: str | None = Query(None),
+    _admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db),
+):
+    service = DiaryService(db)
+    content = service.export_admin_diaries_csv(
+        user_id=userId,
+        dominant_emotion=dominantEmotion,
+        min_mood_score=_parse_optional_int(minMoodScore),
+        max_mood_score=_parse_optional_int(maxMoodScore),
+    )
+    return Response(
+        content=content,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="emotion-diaries.csv"'},
+    )
 
 
 @router.delete("/admin/{diary_id}")

@@ -6,34 +6,19 @@ import type {
 } from 'axios';
 import type { ApiResponse } from '../types/userType';
 import { apiBaseUrl } from '../config';
-import { useLoadingStore } from '../store/loadingStore';
+import { useUserStore } from '../store/userStore';
 
-const SKIP_LOADING_URLS = ['/psychological-chat/stream'];
-
-const shouldSkipLoading = (url?: string) =>
-    SKIP_LOADING_URLS.some(path => url?.includes(path));
-
-// 1. 创建 Axios 实例
 const service: AxiosInstance = axios.create({
     baseURL: apiBaseUrl,
     timeout: 30000,
-    withCredentials: true
+    withCredentials: true,
 });
 
-// 2. 请求拦截器
 service.interceptors.request.use(
     (config) => {
-        if (!shouldSkipLoading(config.url)) {
-            useLoadingStore.getState().setLoading(true);
-        }
-        const token = localStorage.getItem('token');
-        if (token) {
-            config.headers['token'] = token;
-        }
         if (config.data instanceof FormData) {
             delete config.headers['Content-Type'];
         }
-
         return config;
     },
     (error: AxiosError) => {
@@ -42,22 +27,19 @@ service.interceptors.request.use(
     }
 );
 
-// 3. 响应拦截器仅处理网络/HTTP错误
+const handleUnauthorized = () => {
+    useUserStore.getState().clearUserInfo();
+    if (window.location.pathname !== '/auth/login') {
+        window.location.href = '/auth/login';
+    }
+};
+
 service.interceptors.response.use(
-    (response) => {
-        if (!shouldSkipLoading(response.config.url)) {
-            useLoadingStore.getState().setLoading(false);
-        }
-        return response;
-    },
+    (response) => response,
     (error: AxiosError) => {
-        if (!shouldSkipLoading(error.config?.url)) {
-            useLoadingStore.getState().setLoading(false);
-        }
         const data = error.response?.data as ApiResponse | undefined;
         if (data?.code === '401') {
-            localStorage.removeItem('token');
-            window.location.href = '/auth';
+            handleUnauthorized();
         }
         const errMsg = data?.msg || error.message || '服务器异常';
         console.error('Network Error:', errMsg);
@@ -65,16 +47,12 @@ service.interceptors.response.use(
     }
 );
 
-// 4. 封装通用请求方法，并在此处解析后端标准返回格式
 export const request = {
     async get<T = unknown>(url: string, params?: unknown, config?: AxiosRequestConfig): Promise<T> {
         const resp = await service.get<ApiResponse<T>>(url, { params, ...config });
         const res = resp.data;
         if (res.code !== '200') {
-            if (res.code === '401') {
-                localStorage.removeItem('token');
-                window.location.href = '/auth';
-            }
+            if (res.code === '401') handleUnauthorized();
             return Promise.reject(new Error(res.msg || '请求失败'));
         }
         return res as T;
@@ -83,10 +61,7 @@ export const request = {
         const resp = await service.post<ApiResponse<T>>(url, data, config);
         const res = resp.data;
         if (res.code !== '200') {
-            if (res.code === '401') {
-                localStorage.removeItem('token');
-                window.location.href = '/auth';
-            }
+            if (res.code === '401') handleUnauthorized();
             return Promise.reject(new Error(res.msg || '请求失败'));
         }
         return res as T;
@@ -95,10 +70,7 @@ export const request = {
         const resp = await service.put<ApiResponse<T>>(url, data, config);
         const res = resp.data;
         if (res.code !== '200') {
-            if (res.code === '401') {
-                localStorage.removeItem('token');
-                window.location.href = '/auth';
-            }
+            if (res.code === '401') handleUnauthorized();
             return Promise.reject(new Error(res.msg || '请求失败'));
         }
         return res as T;
@@ -107,10 +79,7 @@ export const request = {
         const resp = await service.delete<ApiResponse<T>>(url, { params, ...config });
         const res = resp.data;
         if (res.code !== '200') {
-            if (res.code === '401') {
-                localStorage.removeItem('token');
-                window.location.href = '/auth';
-            }
+            if (res.code === '401') handleUnauthorized();
             return Promise.reject(new Error(res.msg || '请求失败'));
         }
         return res as T;

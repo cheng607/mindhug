@@ -34,11 +34,30 @@ cp .env.production.example .env
 
 ### 2.3 启动服务
 
-**发布前建议先校验 Compose 配置：**
+**发布前建议先校验 Compose 配置（在项目根目录执行）：**
 
 ```bash
+# 在项目根目录 mindHug/
+cp .env.production.example .env
+# 编辑 .env 设置 POSTGRES_PASSWORD、JWT_SECRET_KEY
+
 docker compose config   # 校验语法，不启动容器
 docker compose up -d --build
+```
+
+**实测记录（2026-09-02）**：
+
+| 步骤 | 结果 |
+|------|------|
+| `docker compose config` | ✅ 通过 |
+| `docker compose up -d --build` | ✅ 四容器 healthy |
+| `http://localhost/health` | ✅ 200 OK |
+| 自动化脚本 | `powershell -File scripts/docker-up-test.ps1` |
+
+Windows 需先启动 Docker Desktop。一键验证：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\docker-up-test.ps1
 ```
 
 服务启动后：
@@ -109,6 +128,20 @@ GitHub Actions 工作流 `.github/workflows/ci.yml`：
 
 - 前端：lint + build
 - 后端：pytest 全量测试
+- E2E：Playwright 浏览器 Checklist（`e2e/browser-checklist.mjs`）
+
+本地运行 E2E：
+
+```bash
+# 终端1：后端
+cd backend && DATABASE_URL=sqlite:///./test_integration.db RATE_LIMIT_ENABLED=false uvicorn app.main:app --port 1235
+
+# 终端2：前端预览
+VITE_API_PROXY_TARGET=http://127.0.0.1:1235 npm run preview -- --port 5174
+
+# 终端3：E2E
+E2E_BASE_URL=http://127.0.0.1:5174 E2E_API_URL=http://127.0.0.1:1235 npm run e2e
+```
 
 本地运行测试：
 

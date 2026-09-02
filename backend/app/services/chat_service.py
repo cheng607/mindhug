@@ -58,3 +58,54 @@ async def stream_chat(
         service.save_ai_message(session_id, user, accumulated, citations=citations)
 
     yield "data: [DONE]\n\n"
+
+
+async def stream_regenerate(
+    db: Session,
+    user: User,
+    session_id: int,
+    ai_message_id: int,
+) -> AsyncGenerator[str, None]:
+    """重新生成 AI 回复（删除原 AI 消息后流式输出，不重复写入用户消息）。"""
+    service = SessionService(db)
+    try:
+        user_content = service.prepare_regenerate(session_id, user, ai_message_id)
+    except ValueError as exc:
+        payload = json.dumps({"error": str(exc)}, ensure_ascii=False)
+        yield f"data: {payload}\n\n"
+        yield "data: [DONE]\n\n"
+        return
+
+    history = (
+        db.query(Message)
+        .filter(Message.session_id == session_id)
+        .order_by(Message.created_at.asc(), Message.id.asc())
+        .all()
+    )
+
+    accumulated = ""
+    citations: list[dict] | None = None
+    async for event in agent_graph.stream(db, session_id, user.id, history, user_content):
+        yield event
+        if not event.startswith("data: "):
+            continue
+        payload_str = event[6:].strip()
+        if payload_str == "[DONE]":
+            continue
+        try:
+            payload = json.loads(payload_str)
+            if "content" in payload:
+                accumulated += payload["content"]
+            if "citations" in payload and payload["citations"]:
+                citations = payload["citations"]
+        except json.JSONDecodeError:
+            pass
+
+    if accumulated.strip():
+        try:
+            service.save_ai_message(session_id, user, accumulated, citations=citations)
+        except ValueError as exc:
+            payload = json.dumps({"error": str(exc)}, ensure_ascii=False)
+            yield f"data: {payload}\n\n"
+
+    yield "data: [DONE]\n\n"

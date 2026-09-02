@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.admin_sessions import router as admin_sessions_router
+from app.api.admin_users import router as admin_users_router
 from app.api.agent_config import router as agent_config_router
 from app.api.agent_logs import router as agent_logs_router
 from app.api.analytics import router as analytics_router
@@ -25,7 +26,21 @@ from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
 from app.core.logging_config import setup_logging
 from app.core.rate_limit import RateLimitMiddleware
-from app.models.role import Role
+from app.models import (  # noqa: F401 — 注册全部 ORM 表供 create_all
+    AgentExecutionLog,
+    AgentPromptConfig,
+    ArticleChunk,
+    ChatSession,
+    EmotionDiary,
+    KnowledgeArticle,
+    KnowledgeCategory,
+    Message,
+    PasswordResetToken,
+    RiskAlert,
+    Role,
+    UploadedFile,
+    User,
+)
 from app.services.prompt_config_service import PromptConfigService
 from app.services.rag_service import RAGService
 from app.services.seed_service import seed_knowledge
@@ -48,6 +63,7 @@ def seed_roles() -> None:
         db.commit()
         seed_knowledge(db)
         PromptConfigService(db).seed_defaults()
+        PromptConfigService(db).sync_prompts_from_code()
     finally:
         db.close()
 
@@ -66,6 +82,14 @@ async def seed_rag_index() -> None:
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    logger.info(
+        "启动配置: LLM_PROVIDER=%s, llm_enabled=%s, model=%s, embedding_enabled=%s, embedding_model=%s",
+        settings.LLM_PROVIDER,
+        settings.llm_enabled,
+        settings.llm_model,
+        settings.embedding_enabled,
+        settings.EMBEDDING_MODEL,
+    )
     Base.metadata.create_all(bind=engine)
     seed_roles()
     await seed_rag_index()
@@ -130,6 +154,7 @@ app.include_router(files_router, prefix="/api")
 app.include_router(analytics_router, prefix="/api")
 app.include_router(risk_alerts_router, prefix="/api")
 app.include_router(admin_sessions_router, prefix="/api")
+app.include_router(admin_users_router, prefix="/api")
 app.include_router(agent_logs_router, prefix="/api")
 app.include_router(agent_config_router, prefix="/api")
 app.include_router(rag_router, prefix="/api")

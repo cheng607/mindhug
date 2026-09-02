@@ -1,5 +1,6 @@
 import type { ApiResponse } from '../types/userType'
 import type { AgentPromptConfigType, RiskAlertPageType, RiskAlertType, AgentLogPageType } from '../types/adminType'
+import { downloadAuthenticatedFile } from '../utils/download'
 import { request } from '../utils/request'
 
 export const getRiskAlerts = (params: {
@@ -59,4 +60,53 @@ export const getAgentLogs = (params: {
     userId?: string
 }): Promise<ApiResponse<AgentLogPageType>> => {
     return request.get('/admin/agent-logs', params)
+}
+
+export const getAdminUsers = (params: {
+    pageNum?: string
+    pageSize?: string
+    username?: string
+    status?: string
+}): Promise<ApiResponse<import('../types/userType').AdminUserPageType>> => {
+    return request.get('/admin/users', params)
+}
+
+export const updateAdminUserStatus = (
+    userId: number,
+    status: number
+): Promise<ApiResponse<import('../types/userType').UserInfoType>> => {
+    return request.put(`/admin/users/${userId}/status`, { status })
+}
+
+export const updateAdminUserRole = (
+    userId: number,
+    roleCode: number
+): Promise<ApiResponse<import('../types/userType').UserInfoType>> => {
+    return request.put(`/admin/users/${userId}/role`, { roleCode })
+}
+
+export const exportAdminSessionsCsv = (params?: {
+    emotionTag?: string
+    userId?: string
+}): Promise<void> => {
+    const query = new URLSearchParams()
+    if (params?.emotionTag) query.set('emotionTag', params.emotionTag)
+    if (params?.userId) query.set('userId', params.userId)
+    const suffix = query.toString() ? `?${query.toString()}` : ''
+    return downloadAuthenticatedFile(`/admin/sessions/export${suffix}`, 'consultations.csv')
+}
+
+export const exportAdminDiariesCsv = (params?: {
+    userId?: string
+    dominantEmotion?: string
+    minMoodScore?: string
+    maxMoodScore?: string
+}): Promise<void> => {
+    const query = new URLSearchParams()
+    if (params?.userId) query.set('userId', params.userId)
+    if (params?.dominantEmotion) query.set('dominantEmotion', params.dominantEmotion)
+    if (params?.minMoodScore) query.set('minMoodScore', params.minMoodScore)
+    if (params?.maxMoodScore) query.set('maxMoodScore', params.maxMoodScore)
+    const suffix = query.toString() ? `?${query.toString()}` : ''
+    return downloadAuthenticatedFile(`/emotion-diary/admin/export${suffix}`, 'emotion-diaries.csv')
 }

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -39,6 +40,25 @@ def list_admin_sessions(
         user_id=userId,
     )
     return success_response(data=data.model_dump(), msg="查询成功")
+
+
+@router.get("/export")
+def export_admin_sessions(
+    emotionTag: str | None = Query(""),
+    userId: str | None = Query(None),
+    _admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db),
+):
+    service = SessionService(db)
+    content = service.export_admin_sessions_csv(
+        emotion_tag=emotionTag or "",
+        user_id=userId,
+    )
+    return Response(
+        content=content,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="consultations.csv"'},
+    )
 
 
 @router.get("/{session_id}/messages")

@@ -1,4 +1,5 @@
 """Sprint 8 产品化：法律合规、限流、危机干预、日志脱敏测试。"""
+import json
 import os
 import uuid
 
@@ -9,6 +10,7 @@ os.environ.setdefault("DATABASE_URL", "sqlite:///./test_sprint8.db")
 os.environ.setdefault("LLM_PROVIDER", "mock")
 os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
 
+from app.core.crisis import CRISIS_HOTLINE  # noqa: E402
 from app.core.logging_config import desensitize  # noqa: E402
 from app.core.rate_limit import reset_rate_limiter_state  # noqa: E402
 from app.core.database import Base, SessionLocal, engine  # noqa: E402
@@ -102,16 +104,28 @@ class TestCrisisFlow:
         )
         session_id = start_resp.json()["data"]["sessionId"]
 
-        stream_resp = client.post(
+        content_parts: list[str] = []
+        with client.stream(
+            "POST",
             "/api/psychological-chat/stream",
             json={"sessionId": str(session_id), "userMessage": "我不想活了"},
             headers=headers,
-        )
-        assert stream_resp.status_code == 200
-        body = stream_resp.text
-        assert '"agent": "crisis"' in body or '"agent":"crisis"' in body
-        # 热线在 SSE 分块中可能被拆分
-        assert "0-16" in body and "1-99" in body
+        ) as response:
+            assert response.status_code == 200
+            for line in response.iter_lines():
+                if not line.startswith("data: "):
+                    continue
+                payload = line[6:].strip()
+                if payload == "[DONE]":
+                    break
+                data = json.loads(payload)
+                if "agent" in data:
+                    assert data["agent"] == "crisis"
+                if "content" in data:
+                    content_parts.append(data["content"])
+
+        full_content = "".join(content_parts)
+        assert CRISIS_HOTLINE.replace("-", "") in full_content.replace("-", "")
 
 
 class TestRateLimit:

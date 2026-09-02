@@ -18,13 +18,32 @@ export const createChat = (params: newChatParam): Promise<ApiResponse<newChatRes
 }
 
 // 分页查询咨询会话
-export const getSessionsByPage = (params: { pageNum: string, pageSize: string }): Promise<ApiResponse<sessionListType>> => {
+export const getSessionsByPage = (params: {
+    pageNum: string
+    pageSize: string
+    emotionTag?: string
+}): Promise<ApiResponse<sessionListType>> => {
     return request.get('/psychological-chat/sessions', params)
 }
 
 // 删除会话
 export const deleteSession = (sessionId: string): Promise<ApiResponse<null>> => {
     return request.delete(`/psychological-chat/sessions/${sessionId}`)
+}
+
+export const updateMessage = (
+    sessionId: string,
+    messageId: number,
+    content: string
+): Promise<ApiResponse<sessionDetailType>> => {
+    return request.put(`/psychological-chat/sessions/${sessionId}/messages/${messageId}`, { content })
+}
+
+export const deleteMessage = (
+    sessionId: string,
+    messageId: number
+): Promise<ApiResponse<null>> => {
+    return request.delete(`/psychological-chat/sessions/${sessionId}/messages/${messageId}`)
 }
 
 // 流式对话接口（Consultation 组件直接使用 fetchEventSource，此处保留供其他场景）

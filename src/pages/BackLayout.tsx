@@ -9,6 +9,7 @@ import {
     WarningOutlined,
     RobotOutlined,
     FileSearchOutlined,
+    TeamOutlined,
 } from '@ant-design/icons';
 import { Avatar, Badge, Button, Layout, Menu, theme, Dropdown, Space, message } from 'antd';
 import type { DropdownProps, MenuProps } from 'antd';
@@ -81,6 +82,12 @@ function BackLayout() {
             path: '/back/agent-config',
             icon: <RobotOutlined />,
             label: 'Agent 配置',
+        },
+        {
+            key: '8',
+            path: '/back/users',
+            icon: <TeamOutlined />,
+            label: '用户管理',
         },
         {
             key: '7',

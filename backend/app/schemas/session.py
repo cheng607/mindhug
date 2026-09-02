@@ -13,6 +13,10 @@ class StreamChatRequest(BaseModel):
     userMessage: str = Field(..., min_length=1)
 
 
+class UpdateMessageRequest(BaseModel):
+    content: str = Field(..., min_length=1)
+
+
 class SessionListQuery(BaseModel):
     pageNum: str | None = "1"
     pageSize: str | None = "20"

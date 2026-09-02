@@ -13,6 +13,17 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str = "change-me-in-production-use-a-long-random-string"
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+    AUTH_COOKIE_NAME: str = "access_token"
+
+    FRONTEND_URL: str = "http://localhost:5173"
+    RESET_TOKEN_EXPIRE_MINUTES: int = 30
+
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = "noreply@mindhug.local"
+    SMTP_USE_TLS: bool = True
 
     CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
@@ -30,6 +41,9 @@ class Settings(BaseSettings):
 
     # Embedding（RAG）
     EMBEDDING_MODEL: str = "text-embedding-3-small"
+    EMBEDDING_BASE_URL: str = ""
+    EMBEDDING_API_KEY: str = ""
+    EMBEDDING_DIM: int = 384
     RAG_TOP_K: int = 3
 
     # 限流
@@ -64,6 +78,20 @@ class Settings(BaseSettings):
             "qwen": "qwen-turbo",
         }
         return presets.get(self.LLM_PROVIDER, "deepseek-chat")
+
+    @property
+    def embedding_api_key(self) -> str:
+        return (self.EMBEDDING_API_KEY or self.LLM_API_KEY).strip()
+
+    @property
+    def embedding_enabled(self) -> bool:
+        return self.LLM_PROVIDER != "mock" and bool(self.embedding_api_key)
+
+    @property
+    def embedding_base_url(self) -> str:
+        if self.EMBEDDING_BASE_URL:
+            return self.EMBEDDING_BASE_URL.rstrip("/")
+        return self.llm_base_url
 
 
 settings = Settings()

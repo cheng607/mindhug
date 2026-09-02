@@ -4,15 +4,16 @@ import { RouterProvider } from 'react-router-dom'
 import { App as AntApp } from 'antd'
 import router from './router/index.tsx'
 import ErrorBoundary from './components/common/ErrorBoundary'
-import GlobalLoadingOverlay from './components/common/GlobalLoadingOverlay'
+import AuthProvider from './components/AuthProvider'
 import './index.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
       <AntApp>
-        <GlobalLoadingOverlay />
-        <RouterProvider router={router} />
+        <AuthProvider>
+          <RouterProvider router={router} />
+        </AuthProvider>
       </AntApp>
     </ErrorBoundary>
   </StrictMode>

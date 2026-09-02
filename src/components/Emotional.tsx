@@ -2,6 +2,7 @@ import { Button, Descriptions, Form, Input, Modal, Progress, Rate, Row, Select, 
 import type { TablePaginationConfig } from "antd/es/table";
 import { useEffect, useState, useCallback } from "react";
 import { deleteDiary, getDiary } from "../apis/emotion";
+import { exportAdminDiariesCsv } from "../apis/admin";
 import type { aiDataType, diaryParamType, diaryType } from "../types/emotionType";
 import { parseAiEmotionAnalysis } from "../utils/emotion";
 
@@ -168,9 +169,38 @@ export default function Emotional() {
             message.error('删除失败，请重试');
         }
     }
+    const handleExport = async () => {
+        try {
+            const scoreRange = form.getFieldValue('scoreRange')
+            let minMoodScore: string | undefined
+            let maxMoodScore: string | undefined
+            if (scoreRange === '1-3') {
+                minMoodScore = '1'
+                maxMoodScore = '3'
+            } else if (scoreRange === '4-6') {
+                minMoodScore = '4'
+                maxMoodScore = '6'
+            } else if (scoreRange === '7-10') {
+                minMoodScore = '7'
+                maxMoodScore = '10'
+            }
+            await exportAdminDiariesCsv({
+                userId: form.getFieldValue('userId') || undefined,
+                minMoodScore,
+                maxMoodScore,
+            })
+            message.success('情绪日志已导出')
+        } catch (error) {
+            message.error((error as Error).message || '导出失败')
+        }
+    }
+
     return (
         <>
-            <div className="text-2xl">情绪日志</div>
+            <div className="flex items-center justify-between mb-4">
+                <div className="text-2xl">情绪日志</div>
+                <Button onClick={handleExport}>导出 CSV</Button>
+            </div>
             <Form form={form} onFinish={searchDiary}>
                 <Row className="flex gap-5 mt-5">
                     <Form.Item label="用户ID" name="userId" className="w-72">

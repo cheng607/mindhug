@@ -2,12 +2,34 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { message } from 'antd'
 import { fetchEventSource } from '@microsoft/fetch-event-source'
 import { apiBaseUrl } from '../config'
-import type { sessionDetailType, CitationType } from '../types/sessionsType'
-import { generateUniqueId, mergeStreamChunk } from '../utils/stream'
+import type { sessionDetailType } from '../types/sessionsType'
+import { applyStreamPayload as applyPayload } from '../utils/chatStreamPayload'
+import { generateUniqueId } from '../utils/stream'
 
 interface UseChatStreamOptions {
     onStreamClose?: (sessionId: string) => void
     onCrisisDetected?: () => void
+}
+
+function handleStreamPayload(
+    payload: Record<string, unknown>,
+    setChatList: React.Dispatch<React.SetStateAction<sessionDetailType[]>>,
+    onCrisisDetected?: () => void,
+    setActiveAgent?: (name: string | null) => void,
+) {
+    let result = { ok: true as boolean, agentName: undefined as string | undefined }
+    setChatList(prev => {
+        const applied = applyPayload(payload, prev, onCrisisDetected)
+        result = { ok: applied.result.ok, agentName: applied.result.agentName }
+        return applied.next
+    })
+    if (result.agentName && setActiveAgent) {
+        setActiveAgent(result.agentName)
+    }
+    if (!result.ok) {
+        message.error(String(payload.error))
+    }
+    return result.ok
 }
 
 export function useChatStream(options: UseChatStreamOptions = {}) {
@@ -30,102 +52,59 @@ export function useChatStream(options: UseChatStreamOptions = {}) {
         setIsAiTyping(false)
     }, [])
 
-    const sendMessageToAI = useCallback(async (
-        messageContent: string,
+    const runStream = useCallback(async (
+        url: string,
+        body: unknown | undefined,
         sessionId: string,
-        setChatList: React.Dispatch<React.SetStateAction<sessionDetailType[]>>
+        setChatList: React.Dispatch<React.SetStateAction<sessionDetailType[]>>,
+        prependAiPlaceholder = true,
     ) => {
-        if (!sessionId) return
-
         setIsAiTyping(true)
         setActiveAgent(null)
         abortControllerRef.current = new AbortController()
 
-        const aiMessage: sessionDetailType = {
-            id: generateUniqueId(),
-            content: '',
-            senderType: 2,
-            senderTypeDesc: 'AI助手',
-            messageType: 1,
-            messageTypeDesc: '文本',
-            contentLength: 0,
-            contentPreview: '',
-            createdAt: new Date().toISOString(),
-            sessionId: parseInt(sessionId)
+        if (prependAiPlaceholder) {
+            const aiMessage: sessionDetailType = {
+                id: generateUniqueId(),
+                content: '',
+                senderType: 2,
+                senderTypeDesc: 'AI助手',
+                messageType: 1,
+                messageTypeDesc: '文本',
+                contentLength: 0,
+                contentPreview: '',
+                createdAt: new Date().toISOString(),
+                sessionId: parseInt(sessionId),
+            }
+            setChatList(prev => [...prev, aiMessage])
         }
 
-        setChatList(prev => [...prev, aiMessage])
-
         try {
-            await fetchEventSource(`${apiBaseUrl}/psychological-chat/stream`, {
+            await fetchEventSource(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'text/event-stream',
-                    'token': localStorage.getItem('token') || ''
                 },
-                body: JSON.stringify({ sessionId, userMessage: messageContent }),
+                credentials: 'include',
+                body: body ? JSON.stringify(body) : undefined,
                 signal: abortControllerRef.current.signal,
                 onmessage: (event) => {
                     if (event.data === '[DONE]') {
                         setIsAiTyping(false)
                         return
                     }
-
                     try {
-                        const payload = JSON.parse(event.data)
-                        if (payload.error) {
-                            message.error(payload.error)
+                        const payload = JSON.parse(event.data) as Record<string, unknown>
+                        const ok = handleStreamPayload(
+                            payload,
+                            setChatList,
+                            onCrisisDetectedRef.current,
+                            setActiveAgent,
+                        )
+                        if (!ok) {
                             setIsAiTyping(false)
                             setActiveAgent(null)
-                            setChatList(prev => {
-                                const newList = [...prev]
-                                const last = newList[newList.length - 1]
-                                if (last?.senderType === 2 && !last.content?.trim()) {
-                                    newList.pop()
-                                }
-                                return newList
-                            })
-                            return
-                        }
-                        if (payload.agent === 'crisis') {
-                            onCrisisDetectedRef.current?.()
-                        }
-                        if (payload.agentName) {
-                            setActiveAgent(payload.agentName)
-                        }
-                        if (Array.isArray(payload.citations) && payload.citations.length > 0) {
-                            setChatList(prev => {
-                                const newList = [...prev]
-                                const lastIndex = newList.length - 1
-                                const lastMessage = newList[lastIndex]
-                                if (lastMessage && lastMessage.senderType === 2) {
-                                    newList[lastIndex] = {
-                                        ...lastMessage,
-                                        citations: payload.citations as CitationType[],
-                                    }
-                                }
-                                return newList
-                            })
-                        }
-                        const chunk = payload.content ?? payload.data?.content
-                        if (typeof chunk === 'string' && chunk.length > 0) {
-                            setChatList(prev => {
-                                const newList = [...prev]
-                                const lastIndex = newList.length - 1
-                                const lastMessage = newList[lastIndex]
-                                if (lastMessage && lastMessage.senderType === 2) {
-                                    const existing = lastMessage.content || ''
-                                    const updated = mergeStreamChunk(existing, chunk)
-                                    newList[lastIndex] = {
-                                        ...lastMessage,
-                                        content: updated,
-                                        contentLength: updated.length,
-                                        contentPreview: updated.substring(0, 50)
-                                    }
-                                }
-                                return newList
-                            })
                         }
                     } catch (error) {
                         console.error('解析SSE数据失败:', error)
@@ -140,14 +119,49 @@ export function useChatStream(options: UseChatStreamOptions = {}) {
                     setIsAiTyping(false)
                     message.error('连接中断，请重试')
                     throw error
-                }
+                },
             })
         } catch (error) {
-            console.error('发送消息失败:', error)
+            console.error('流式请求失败:', error)
             setIsAiTyping(false)
-            message.error('发送消息失败，请重试')
+            message.error('请求失败，请重试')
         }
     }, [])
 
-    return { isAiTyping, setIsAiTyping, sendMessageToAI, abortStream, activeAgent }
+    const sendMessageToAI = useCallback(async (
+        messageContent: string,
+        sessionId: string,
+        setChatList: React.Dispatch<React.SetStateAction<sessionDetailType[]>>
+    ) => {
+        if (!sessionId) return
+        await runStream(
+            `${apiBaseUrl}/psychological-chat/stream`,
+            { sessionId, userMessage: messageContent },
+            sessionId,
+            setChatList,
+            true,
+        )
+    }, [runStream])
+
+    const regenerateMessage = useCallback(async (
+        sessionId: string,
+        messageId: number,
+        setChatList: React.Dispatch<React.SetStateAction<sessionDetailType[]>>,
+    ) => {
+        if (!sessionId || !messageId) return
+        setChatList(prev => {
+            const index = prev.findIndex(item => item.id === messageId)
+            if (index < 0) return prev
+            return prev.slice(0, index)
+        })
+        await runStream(
+            `${apiBaseUrl}/psychological-chat/sessions/${sessionId}/messages/${messageId}/regenerate`,
+            undefined,
+            sessionId,
+            setChatList,
+            true,
+        )
+    }, [runStream])
+
+    return { isAiTyping, setIsAiTyping, sendMessageToAI, regenerateMessage, abortStream, activeAgent }
 }

@@ -27,6 +27,7 @@ class LLMService:
         self,
         messages: list[dict[str, str]],
         *,
+        model: str | None = None,
         temperature: float | None = None,
         max_tokens: int | None = None,
     ) -> str:
@@ -34,7 +35,7 @@ class LLMService:
             raise RuntimeError("LLM 未配置，请设置 LLM_PROVIDER 和 LLM_API_KEY")
 
         payload = {
-            "model": self.model,
+            "model": model or self.model,
             "messages": messages,
             "temperature": temperature if temperature is not None else settings.LLM_TEMPERATURE,
             "max_tokens": max_tokens or settings.LLM_MAX_TOKENS,
@@ -55,6 +56,7 @@ class LLMService:
         self,
         messages: list[dict[str, str]],
         *,
+        model: str | None = None,
         temperature: float | None = None,
         max_tokens: int | None = None,
     ) -> AsyncGenerator[str, None]:
@@ -62,7 +64,7 @@ class LLMService:
             raise RuntimeError("LLM 未配置")
 
         payload = {
-            "model": self.model,
+            "model": model or self.model,
             "messages": messages,
             "temperature": temperature if temperature is not None else settings.LLM_TEMPERATURE,
             "max_tokens": max_tokens or settings.LLM_MAX_TOKENS,

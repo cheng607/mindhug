@@ -5,10 +5,10 @@ import { useUserStore } from "../store/userStore";
 
 export default function Default() {
     const navigate = useNavigate();
-    const token = useUserStore(state => state.token);
+    const userInfo = useUserStore(state => state.userInfo);
 
     const goConsultation = () => {
-        if (token) {
+        if (userInfo) {
             navigate('/consultation');
         } else {
             navigate('/auth/login', { state: { from: { pathname: '/consultation' } } });
@@ -16,7 +16,7 @@ export default function Default() {
     };
 
     const goDiary = () => {
-        if (token) {
+        if (userInfo) {
             navigate('/diary');
         } else {
             navigate('/auth/login', { state: { from: { pathname: '/diary' } } });

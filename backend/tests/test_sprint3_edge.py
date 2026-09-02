@@ -84,6 +84,7 @@ def test_draft_article_hidden_from_public(client: TestClient):
             "tags": ["test"],
         },
     )
+    client.cookies.clear()
     public_records = client.get(
         "/api/knowledge/article/page",
         params={"currentPage": "1", "size": "50"},
@@ -154,5 +155,6 @@ def test_unpublished_article_detail_returns_404_for_public(client: TestClient):
         },
     )
     article_id = create.json()["data"]["id"]
+    client.cookies.clear()
     resp = client.get(f"/api/knowledge/article/{article_id}")
     assert resp.status_code == 404

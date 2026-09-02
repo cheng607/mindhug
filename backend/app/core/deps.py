@@ -1,13 +1,14 @@
-from fastapi import Depends, Header, HTTPException
+from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.auth_token import extract_access_token
 from app.core.database import get_db
 from app.core.security import decode_access_token
 from app.models.user import User
 
 
 def get_current_user(
-    token: str | None = Header(None, alias="token"),
+    token: str | None = Depends(extract_access_token),
     db: Session = Depends(get_db),
 ) -> User:
     if not token:
@@ -34,7 +35,7 @@ def get_current_user(
 
 
 def get_optional_user(
-    token: str | None = Header(None, alias="token"),
+    token: str | None = Depends(extract_access_token),
     db: Session = Depends(get_db),
 ) -> User | None:
     if not token:

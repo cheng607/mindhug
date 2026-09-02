@@ -4,7 +4,7 @@ import { BookOutlined } from "@ant-design/icons";
 import ReactMarkdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
 import remarkGfm from 'remark-gfm';
-import { getAdminSessionMessages, getAdminSessions } from "../apis/admin";
+import { getAdminSessionMessages, getAdminSessions, exportAdminSessionsCsv } from "../apis/admin";
 import type { sessionDetailType, sessionType } from "../types/sessionsType";
 import { Button, Modal, Space, Table, Tag, message } from "antd";
 import type { TablePaginationConfig } from "antd/es/table";
@@ -119,9 +119,21 @@ export default function Consultations() {
             message.error((error as Error).message || '获取会话详情失败')
         }
     }
+    const handleExport = async () => {
+        try {
+            await exportAdminSessionsCsv()
+            message.success('咨询记录已导出')
+        } catch (error) {
+            message.error((error as Error).message || '导出失败')
+        }
+    }
+
     return (
         <>
-            <div className="text-2xl">咨询记录</div>
+            <div className="flex items-center justify-between mb-4">
+                <div className="text-2xl">咨询记录</div>
+                <Button onClick={handleExport}>导出 CSV</Button>
+            </div>
             <Table
                 dataSource={sessionList}
                 columns={columns}

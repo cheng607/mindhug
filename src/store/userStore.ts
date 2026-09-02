@@ -1,12 +1,15 @@
 import { create } from 'zustand'
 import type { UserInfoType } from '../types/userType'
+
 interface UserStoreState {
     userInfo: UserInfoType | null;
-    token: string | null;
     roleType: string | null;
-    setUserInfo: (userInfo: UserInfoType, token: string, roleType: string) => void;
+    authReady: boolean;
+    setUserInfo: (userInfo: UserInfoType, roleType: string) => void;
+    setAuthReady: (ready: boolean) => void;
     clearUserInfo: () => void;
 }
+
 export const useUserStore = create<UserStoreState>((set) => ({
     userInfo: (() => {
         try {
@@ -17,20 +20,19 @@ export const useUserStore = create<UserStoreState>((set) => ({
             return null;
         }
     })(),
-    token: localStorage.getItem('token') || null,
     roleType: localStorage.getItem('roleType') || null,
-    // 设置完整用户信息
-    setUserInfo: (userInfo, token, roleType) => {
+    authReady: false,
+    setUserInfo: (userInfo, roleType) => {
         localStorage.setItem('userInfo', JSON.stringify(userInfo));
-        localStorage.setItem('token', token);
-        localStorage.setItem('roleType', roleType)
-        set({ userInfo, token, roleType });
+        localStorage.setItem('roleType', roleType);
+        localStorage.removeItem('token');
+        set({ userInfo, roleType, authReady: true });
     },
-    // 清空用户信息
+    setAuthReady: (ready) => set({ authReady: ready }),
     clearUserInfo: () => {
         localStorage.removeItem('userInfo');
+        localStorage.removeItem('roleType');
         localStorage.removeItem('token');
-        localStorage.removeItem('roleType')
-        set({ userInfo: null, token: null, roleType: null });
+        set({ userInfo: null, roleType: null, authReady: true });
     },
 }));

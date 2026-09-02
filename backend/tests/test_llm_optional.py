@@ -116,3 +116,18 @@ def test_real_embedding_rag_smoke():
     finally:
         db.close()
     assert results is not None
+
+
+@pytest.mark.skipif(not _llm_configured(), reason="需要 LLM_PROVIDER != mock 且 LLM_API_KEY")
+def test_real_embedding_api_vector():
+    """真实 Embedding API 返回非 mock 向量。"""
+    import asyncio
+
+    from app.services.embedding_service import EmbeddingService, mock_embed
+
+    service = EmbeddingService()
+    assert service.enabled
+    vec = asyncio.run(service.embed_text("心理健康"))
+    mock_vec = mock_embed("心理健康", service.dim)
+    assert len(vec) >= 128
+    assert vec != mock_vec

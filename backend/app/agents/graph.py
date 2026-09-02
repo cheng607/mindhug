@@ -2,6 +2,7 @@
 import asyncio
 import json
 import logging
+import os
 import time
 from collections.abc import AsyncGenerator
 
@@ -25,6 +26,20 @@ from app.services.risk_alert_service import RiskAlertService
 logger = logging.getLogger(__name__)
 
 
+def _build_conversation_context(history: list[Message]) -> str:
+    """提取前几轮用户发言，注入 system prompt 以强化上下文连贯性。"""
+    user_msgs = [m.content.strip() for m in history if m.sender_type == SENDER_USER and m.content]
+    if len(user_msgs) <= 1:
+        return ""
+    prior = user_msgs[:-1][-4:]
+    bullets = "\n".join(f"- {line}" for line in prior)
+    return (
+        f"\n\n## 对话背景（用户前几轮说过）\n{bullets}\n\n"
+        "请自然承接上文，回应本轮新内容；不要重复追问已聊过的问题，"
+        "不要用引号复述用户原话，不要套「我听到…」等模板句。"
+    )
+
+
 def build_agent_messages(
     db: Session,
     history: list[Message],
@@ -38,6 +53,7 @@ def build_agent_messages(
     recent = history[-limit:] if len(history) > limit else history
     prompt_service = PromptConfigService(db)
     system_prompt = prompt_service.get_prompt(intent)
+    system_prompt += _build_conversation_context(recent)
 
     if rag_context and intent in ("counsel", "listen"):
         system_prompt = (
@@ -121,7 +137,7 @@ class AgentGraph:
         user_message: str,
     ) -> AsyncGenerator[str, None]:
         start = time.perf_counter()
-        intent = classify_intent(user_message)
+        intent = classify_intent(user_message, history)
         agent_name = AGENT_NAMES[intent]
 
         maybe_create_risk_alert(db, session_id, user_id, user_message, intent)
@@ -143,8 +159,15 @@ class AgentGraph:
 
         accumulated = ""
         llm_used = False
+        llm_params = PromptConfigService(db).get_llm_params(intent)
 
-        if llm_service.enabled:
+        # 危机场景始终使用固定模板（含统一热线），不调用 LLM
+        if intent == "crisis":
+            reply = build_mock_reply(user_message, intent, citations, history)
+            accumulated = reply
+            async for event in _stream_text_as_sse(reply):
+                yield event
+        elif llm_service.enabled:
             try:
                 if intent == "knowledge":
                     messages = build_knowledge_messages(db, history, user_message, rag_context)
@@ -152,7 +175,12 @@ class AgentGraph:
                     messages = build_agent_messages(
                         db, history, intent, rag_context=rag_context if citations else ""
                     )
-                async for chunk in llm_service.chat_stream(messages):
+                async for chunk in llm_service.chat_stream(
+                    messages,
+                    model=llm_params["model"],
+                    temperature=llm_params["temperature"],
+                    max_tokens=llm_params["max_tokens"],
+                ):
                     accumulated += chunk
                     llm_used = True
                     payload = json.dumps({"content": chunk}, ensure_ascii=False)

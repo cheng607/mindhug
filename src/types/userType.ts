@@ -47,3 +47,11 @@ export interface LoginResponse {
     token: string,
     roleType: string
 }
+
+export interface AdminUserPageType {
+    records: UserInfoType[]
+    total: number
+    size: number
+    current: number
+    pages: number
+}

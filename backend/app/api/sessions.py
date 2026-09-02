@@ -6,9 +6,9 @@ from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.core.response import error_response, success_response
 from app.models.user import User
-from app.schemas.session import StartSessionRequest, StreamChatRequest
+from app.schemas.session import StartSessionRequest, StreamChatRequest, UpdateMessageRequest
 from app.services.session_service import SessionService, parse_session_id
-from app.services.chat_service import stream_chat as chat_stream_generator
+from app.services.chat_service import stream_chat as chat_stream_generator, stream_regenerate
 from app.services.emotion_service import analyze_session_emotion
 from app.services.risk_alert_service import RiskAlertService
 
@@ -152,3 +152,63 @@ async def get_session_emotion(
     except ValueError as exc:
         return error_response("404", str(exc), status_code=404)
     return success_response(data=data.model_dump(), msg="查询成功")
+
+
+@router.put("/sessions/{session_id}/messages/{message_id}")
+def update_message(
+    session_id: str,
+    message_id: int,
+    payload: UpdateMessageRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    service = SessionService(db)
+    sid, err = _parse_session_id_or_error(session_id)
+    if err:
+        return err
+    try:
+        data = service.update_user_message(sid, current_user, message_id, payload.content)
+    except ValueError as exc:
+        return error_response("400", str(exc), status_code=400)
+    return success_response(data=data.model_dump(), msg="消息更新成功")
+
+
+@router.delete("/sessions/{session_id}/messages/{message_id}")
+def delete_message(
+    session_id: str,
+    message_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    service = SessionService(db)
+    sid, err = _parse_session_id_or_error(session_id)
+    if err:
+        return err
+    try:
+        service.delete_message(sid, current_user, message_id)
+    except ValueError as exc:
+        return error_response("400", str(exc), status_code=400)
+    return success_response(data=None, msg="删除成功")
+
+
+@router.post("/sessions/{session_id}/messages/{message_id}/regenerate")
+async def regenerate_message(
+    session_id: str,
+    message_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    sid, err = _parse_session_id_or_error(session_id)
+    if err:
+        return err
+
+    generator = stream_regenerate(db, current_user, sid, message_id)
+    return StreamingResponse(
+        generator,
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )

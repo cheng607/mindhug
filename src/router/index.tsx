@@ -6,6 +6,8 @@ import BackLayout from "../pages/BackLayout";
 import Auth from "../pages/Auth";
 import LoginForm from "../components/LoginForm";
 import RegisterForm from "../components/RegisterForm";
+import ForgotPasswordForm from "../components/ForgotPasswordForm";
+import ResetPasswordForm from "../components/ResetPasswordForm";
 import Home from "../pages/Home";
 import App from "../App";
 import { RequireAuth, RedirectIfAuth, RedirectAdminToBack } from "./RouteGuards";
@@ -21,6 +23,7 @@ const Emotional = lazy(() => import("../components/Emotional"));
 const RiskAlertCenter = lazy(() => import("../components/RiskAlertCenter"));
 const AgentConfig = lazy(() => import("../components/AgentConfig"));
 const AgentLogs = lazy(() => import("../components/AgentLogs"));
+const UserManagement = lazy(() => import("../components/UserManagement"));
 const Consultation = lazy(() => import("../components/Consultation"));
 const Diary = lazy(() => import("../components/Diary"));
 const KnowledgeBase = lazy(() => import("../components/KnowledgeBase"));
@@ -42,6 +45,8 @@ const authRoutes = {
         { path: "", element: <LoginForm /> },
         { path: 'login', element: <LoginForm /> },
         { path: 'register', element: <RegisterForm /> },
+        { path: 'forgot', element: <ForgotPasswordForm /> },
+        { path: 'reset', element: <ResetPasswordForm /> },
     ]
 }
 const backRoutes = {
@@ -60,6 +65,7 @@ const backRoutes = {
         { path: 'risk-alerts', element: <LazyPage><RiskAlertCenter /></LazyPage> },
         { path: 'agent-config', element: <LazyPage><AgentConfig /></LazyPage> },
         { path: 'agent-logs', element: <LazyPage><AgentLogs /></LazyPage> },
+        { path: 'users', element: <LazyPage><UserManagement /></LazyPage> },
     ]
 }
 

@@ -11,32 +11,183 @@
 
 ## 快速启动
 
-### 开发环境（推荐）
+项目由 **前端（Vite）** + **后端（FastAPI）** + **数据库（PostgreSQL，可选 Redis）** 组成。下面两种任选其一。
+
+### 前置要求
+
+| 工具 | 版本建议 | 用途 |
+|------|----------|------|
+| Node.js | 18+ | 前端 |
+| Python | 3.11+ | 后端 |
+| Docker Desktop | 最新 | 数据库 / 可选全栈（Windows 需先启动 Docker） |
+| Git | — | 克隆代码 |
+
+---
+
+### 方式一：Docker 开发栈（推荐，最少配置）
+
+适合：不想本机装 PostgreSQL，希望一条命令起后端 + 数据库。
 
 ```bash
-# 1. 启动 PostgreSQL + Redis + 后端
+# 在项目根目录 mindHug/
+
+# 1. 首次：准备后端配置
+cd backend
+copy .env.example .env          # Windows
+# cp .env.example .env          # macOS / Linux
+# 按需编辑 backend/.env（LLM_API_KEY 等）
+cd ..
+
+# 2. 启动 PostgreSQL + Redis + 后端（热重载）
 docker compose -f docker-compose.dev.yml up -d
 
-# 2. 验证后端
+# 3. 验证后端
 curl http://localhost:8000/health
+# 应返回 {"status":"ok"}
 
-# 3. 启动前端
+# 4. 启动前端（新开一个终端，仍在项目根目录）
 npm install
 npm run dev
 ```
 
-- 前端：http://localhost:5173
-- 后端 API 文档：http://localhost:8000/docs
+| 服务 | 地址 |
+|------|------|
+| 前端 | http://localhost:5173 |
+| 后端 API | http://localhost:8000 |
+| API 文档 | http://localhost:8000/docs |
 
-### 生产部署
+**推荐端口**：本机开发固定使用 **8000（后端）+ 5173（前端）**。若 5173 被占用，Vite 会自动尝试 5174 等端口；E2E 测试默认使用 **5174 + 1235**。
+
+所有 `docker compose` 命令须在 **项目根目录** `mindHug/` 下执行，不要在 `backend/` 子目录运行生产 compose。
+
+前端通过 `.env.development` 把 `/api` 代理到 `http://localhost:8000`，**无需改前端配置**。
+
+---
+
+### 方式二：本机手动运行（灵活，改代码/LLM 最方便）
+
+适合：不用 Docker 跑后端，或只用 Docker 起数据库。
+
+#### 步骤 1：数据库（二选一）
+
+**A. Docker 只起数据库（推荐）**
 
 ```bash
-cp .env.production.example .env
-# 编辑 .env，设置 POSTGRES_PASSWORD、JWT_SECRET_KEY 等
-docker compose up -d --build
+docker compose -f docker-compose.dev.yml up -d postgres redis
 ```
 
-详见 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+**B. 轻量本地调试（SQLite，无需 Docker）**
+
+编辑 `backend/.env`：
+
+```env
+DATABASE_URL=sqlite:///./mindhug.db
+RATE_LIMIT_ENABLED=false
+RATE_LIMIT_USE_REDIS=false
+```
+
+#### 步骤 2：后端
+
+```bash
+cd backend
+
+# 首次：虚拟环境 + 依赖
+python -m venv .venv
+.venv\Scripts\activate          # Windows PowerShell
+# source .venv/bin/activate     # macOS / Linux
+
+pip install -r requirements.txt
+
+# 首次：复制配置
+copy .env.example .env          # Windows
+# cp .env.example .env
+
+# 启动（--reload：改 Python 代码自动重载）
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+#### 步骤 3：前端（新开终端，项目根目录）
+
+```bash
+npm install
+npm run dev
+```
+
+浏览器打开 http://localhost:5173 。
+
+---
+
+## 日常操作：停止 / 重启
+
+### 重启后端（改完 `backend/.env` 或 LLM 配置后必做）
+
+`.env` 只在进程启动时读取，**改 API Key 后必须重启后端**才会生效。
+
+#### Docker 方式
+
+```bash
+# 在项目根目录
+docker compose -f docker-compose.dev.yml restart backend
+
+# 若改了 Dockerfile 或 requirements.txt，需重建：
+docker compose -f docker-compose.dev.yml up -d --build backend
+```
+
+#### 本机 uvicorn 方式
+
+1. 在运行后端的终端按 **`Ctrl + C`** 停止  
+2. 再次启动：
+
+```bash
+cd backend
+.venv\Scripts\activate          # Windows（若使用虚拟环境）
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+> 使用 `--reload` 时，**仅改 `.py` 代码**会自动重载；**改 `.env` 不会自动重载**，仍需手动 Ctrl+C 后重启。
+
+### 重启前端
+
+1. 前端终端 **`Ctrl + C`**
+2. `npm run dev`
+
+改 `.env.development` 后也需要重启前端。
+
+### 停止整个项目
+
+```bash
+# 停止 Docker 栈（数据库 + 后端容器）
+docker compose -f docker-compose.dev.yml down
+
+# 前端、本机 uvicorn：各自终端 Ctrl + C
+```
+
+### 查看 Docker 服务状态
+
+```bash
+docker compose -f docker-compose.dev.yml ps
+docker compose -f docker-compose.dev.yml logs -f backend   # 看后端日志
+```
+
+---
+
+## 启用真实 LLM（对话质量）
+
+默认 `LLM_PROVIDER=mock` 为固定模板，**仅适合测试**。正式体验请配置 API Key：
+
+1. 编辑 `backend/.env`：
+
+```env
+LLM_PROVIDER=deepseek
+LLM_API_KEY=sk-你的密钥
+LLM_MODEL=deepseek-chat
+```
+
+2. **重启后端**（见上一节「重启后端」）
+
+3. 新开对话测试；支持 `deepseek` / `openai` / `qwen`
+
+---
 
 ## 环境变量
 
@@ -59,27 +210,56 @@ docker compose up -d --build
 
 完整配置见 `backend/.env.example`
 
-### 启用真实 LLM（推荐）
+---
 
-默认 `LLM_PROVIDER=mock` 使用固定模板，对话质量有限。启用真实大模型后，AI 会结合上下文生成个性化回复：
+## 生产部署
 
 ```bash
-cd backend
-cp .env.example .env   # 若尚无 .env
-# 编辑 .env，设置：
-#   LLM_PROVIDER=deepseek
-#   LLM_API_KEY=sk-你的密钥
-#   LLM_MODEL=deepseek-chat
-uvicorn app.main:app --reload --port 8000
+cp .env.production.example .env
+# 编辑 .env，设置 POSTGRES_PASSWORD、JWT_SECRET_KEY 等
+docker compose up -d --build
 ```
 
-支持 `deepseek` / `openai` / `qwen`，配置 API Key 后自动启用，无需改代码。
+详见 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+
+### 创建管理员账号
+
+首次部署后执行（Docker 生产栈）：
+
+```bash
+docker compose exec backend python scripts/create_admin.py
+```
+
+默认账号（可通过环境变量 `ADMIN_USERNAME` / `ADMIN_PASSWORD` / `ADMIN_EMAIL` 覆盖）：
+
+| 字段 | 默认值 |
+|------|--------|
+| 用户名 | `admin` |
+| 密码 | `admin123456` |
+| 邮箱 | `admin@mindhug.local` |
+
+登录页 `/auth`，管理员会自动进入 `/back/dashboard`。**生产环境请立即修改密码。**
+
+---
+
+## 常见问题
+
+| 现象 | 处理 |
+|------|------|
+| 前端能开但接口 404/502 | 确认后端已启动；`.env.development` 里 `VITE_API_PROXY_TARGET` 指向 `http://localhost:8000` |
+| 改了 LLM Key 对话仍像机器人 | 改的是 `backend/.env`，需 **重启后端**（见上文） |
+| Docker 启动失败 | 确认 Docker Desktop 已运行；端口 5432/8000 未被占用 |
+| Windows `curl` 不可用 | 浏览器访问 http://localhost:8000/health 或 `Invoke-WebRequest http://localhost:8000/health` |
+| pytest 429 | 测试环境在 `backend/tests/conftest.py` 已关闭限流；本地跑测试无需额外配置 |
+
+---
 
 ## 测试
 
 ```bash
 # 前端
 npm run lint
+npm run test
 npm run build
 
 # 后端

@@ -8,6 +8,7 @@ from app.models.knowledge_category import KnowledgeCategory
 from app.models.message import Message
 from app.models.risk_alert import RiskAlert
 from app.models.role import Role
+from app.models.password_reset_token import PasswordResetToken
 from app.models.uploaded_file import UploadedFile
 from app.models.user import User
 

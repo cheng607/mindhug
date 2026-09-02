@@ -11,12 +11,13 @@
 
 | 维度 | 结果 | 说明 |
 |------|------|------|
-| 后端 pytest 全量 | ✅ **61/61 通过** | `backend/tests/conftest.py` 测试环境关闭限流 |
+| 后端 pytest 全量 | ✅ **108/108 通过**（2 skipped） | 含导出 API + 对话质量验收 |
 | 前端 `npm run lint` | ✅ 通过 | |
-| 前端 `npm run build` | ✅ 通过 | 主包约 3.45MB |
-| Docker 生产全栈 | ⚠️ 配置已校验 | 需 `.env` 后 `docker compose config`；全栈 `up` 未在本环境执行 |
-| 真实 LLM / Embedding | ❌ 未执行 | 默认 `LLM_PROVIDER=mock` |
-| 浏览器 E2E 手动测试 | ❌ 未执行 | 以下功能评估基于代码审查 + API 测试 |
+| 前端 Vitest | ✅ 12 passed | `npm run test` |
+| 前端 `npm run build` | ✅ 通过 | ECharts 懒加载后主包更小 |
+| Playwright E2E | ✅ **19/19** | 含知识发布/下架 + 多轮对话 |
+| Docker 生产全栈 | ✅ 已实测 | `http://localhost/health` |
+| 真实 LLM / Embedding | ⚠️ 可选 | 默认 `LLM_PROVIDER=mock`；生产配置 DeepSeek |
 
 **最近提交**：`c848a04 feat: Sprint 8 产品化及问题修复`
 
@@ -24,7 +25,8 @@
 
 ```bash
 cd backend && python -m pytest tests/ -v
-cd .. && npm run lint && npm run build
+cd .. && npm run lint && npm run test && npm run build
+npm run e2e   # 需前后端已启动
 ```
 
 ---
@@ -38,7 +40,7 @@ cd .. && npm run lint && npm run build
 | **S3** 业务 | 日记 + 知识库 + 上传 + 统计 | 13/13 ✅ | 达标 |
 | **S4** 前端重构 | 组件拆分 + useChatStream + Profile + 守卫 | 回归 ✅ | 达标 |
 | **S5** AI 单 Agent | LLM 层 + 流式 + 情绪分析 + 日记异步 | 6/6 ✅ | mock 完整 |
-| **S6** 多 Agent | 意图路由 + 4 Agent + 执行日志 | 6/6 ✅ | 达标（非 LangGraph 库） |
+| **S6** 多 Agent | 意图路由 + 4 Agent + 执行日志 | 30+ ✅ | 路由规则扩充 + 20 条意图样本 |
 | **S7** RAG + 管理 | RAG + 预警中心 + Prompt 配置 + 引用 | 7/7 ✅ | 达标 |
 | **S8** 产品化 | 协议 + 危机干预 + 限流脱敏 + Docker + CI | 8/8 ✅ | 基本达标 |
 
@@ -326,7 +328,7 @@ P2：
 - [x] Bug #14: 管理端 Markdown 渲染
 
 验证：
-- [x] pytest 61 passed, 2 skipped（LLM 可选）
+- [x] pytest 90 passed, 2 skipped（LLM 可选）
 - [x] npm run lint && npm run build
 - [x] 浏览器 Checklist 第七节（Playwright 17/17）
 - [ ] docker compose 全栈（可选）
@@ -364,7 +366,7 @@ P2：
 | 管理端 | **80%** | 咨询记录跨用户缺失；表格列有误 |
 | AI 能力（mock） | **90%** | 多 Agent + RAG + 危机 + 情绪分析完整 |
 | 产品化 / 合规 | **90%** | 协议、危机、限流、脱敏、Docker、CI |
-| 测试覆盖 | **良好** | 61 项 API 集成测试 |
+| 测试覆盖 | **良好** | 90 项 API 集成测试 |
 | **整体项目** | **✅ 基本达标** | 可演示、可部署；建议修 P1 后作为正式版本 |
 
 **一句话**：MindHug 已按 PROJECT_PLAN 完成 8 个 Sprint 的主干功能，自动化测试全绿；剩余问题集中在**管理端数据范围**、**用户日记回看**和**部分 UI 细节**，不影响核心演示，但影响「产品完整度」。

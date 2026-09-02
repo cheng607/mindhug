@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkBreaks from 'remark-breaks'
 import remarkGfm from 'remark-gfm'
-import { BookOutlined, UserOutlined } from '@ant-design/icons'
+import { BookOutlined, DeleteOutlined, EditOutlined, MoreOutlined, RedoOutlined, UserOutlined } from '@ant-design/icons'
+import { Dropdown } from 'antd'
+import type { MenuProps } from 'antd'
 import AgentIcon from '../../assets/agent4.png'
 import type { sessionDetailType } from '../../types/sessionsType'
 import Empty from '../common/Empty'
@@ -11,15 +13,25 @@ import Empty from '../common/Empty'
 interface ChatWindowProps {
     messages: sessionDetailType[]
     isAiTyping: boolean
+    onEditMessage?: (message: sessionDetailType) => void
+    onDeleteMessage?: (message: sessionDetailType) => void
+    onRegenerateMessage?: (message: sessionDetailType) => void
 }
 
-export default function ChatWindow({ messages, isAiTyping }: ChatWindowProps) {
+export default function ChatWindow({
+    messages,
+    isAiTyping,
+    onEditMessage,
+    onDeleteMessage,
+    onRegenerateMessage,
+}: ChatWindowProps) {
     const normalizedMessages = useMemo(() => {
         if (!Array.isArray(messages)) return []
         return [...messages].sort((a, b) => {
             const timeA = new Date(a.createdAt).getTime()
             const timeB = new Date(b.createdAt).getTime()
             if (timeA !== timeB) return timeA - timeB
+            if (a.senderType !== b.senderType) return a.senderType - b.senderType
             return Number(a.id) - Number(b.id)
         })
     }, [messages])
@@ -77,12 +89,43 @@ export default function ChatWindow({ messages, isAiTyping }: ChatWindowProps) {
         return <span className='whitespace-pre-wrap break-words'>{content}</span>
     }
 
+    const buildMenuItems = (item: sessionDetailType): MenuProps['items'] => {
+        const items: MenuProps['items'] = []
+        if (item.senderType === 1 && onEditMessage) {
+            items.push({
+                key: 'edit',
+                icon: <EditOutlined />,
+                label: '编辑',
+                onClick: () => onEditMessage(item),
+            })
+        }
+        if (item.senderType === 2 && onRegenerateMessage && item.content?.trim()) {
+            items.push({
+                key: 'regenerate',
+                icon: <RedoOutlined />,
+                label: '重新生成',
+                onClick: () => onRegenerateMessage(item),
+            })
+        }
+        if (onDeleteMessage) {
+            items.push({
+                key: 'delete',
+                icon: <DeleteOutlined />,
+                label: '删除',
+                danger: true,
+                onClick: () => onDeleteMessage(item),
+            })
+        }
+        return items
+    }
+
     return (
-        <div className='h-[800px] p-3 overflow-y-scroll'>
+        <div className='flex-1 min-h-[320px] max-h-[70vh] lg:h-[800px] p-3 overflow-y-scroll'>
             {normalizedMessages.length === 0 ? (
                 <Empty description="开始一段新的对话吧" className="h-full" />
             ) : normalizedMessages.map(item => {
                 const isUser = item.senderType === 1
+                const menuItems = buildMenuItems(item)
                 return (
                     <div className={`p-4 flex ${isUser ? 'justify-end' : 'justify-start'}`} key={item.id}>
                         <div className={`flex gap-2 max-w-[85%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -92,8 +135,15 @@ export default function ChatWindow({ messages, isAiTyping }: ChatWindowProps) {
                                 <img src={AgentIcon} className='w-8 h-8 rounded-full' alt="AI" />
                             )}
                             <div className={isUser ? 'text-right' : 'text-left'}>
-                                <div className={`inline-block text-gray-800 px-3 py-2 my-2 rounded-lg break-words ${isUser ? 'bg-[#F5F7FA] rounded-tr-none' : 'bg-[#FFF7ED] rounded-tl-none'}`}>
-                                    {renderMessageContent(item)}
+                                <div className={`inline-flex items-start gap-1 text-gray-800 px-3 py-2 my-2 rounded-lg break-words ${isUser ? 'bg-[#F5F7FA] rounded-tr-none' : 'bg-[#FFF7ED] rounded-tl-none'}`}>
+                                    <div className='flex-1'>{renderMessageContent(item)}</div>
+                                    {menuItems && menuItems.length > 0 && (
+                                        <Dropdown menu={{ items: menuItems }} trigger={['click']}>
+                                            <button type='button' className='text-gray-400 hover:text-gray-600 p-1 shrink-0'>
+                                                <MoreOutlined />
+                                            </button>
+                                        </Dropdown>
+                                    )}
                                 </div>
                                 <div className='text-xs text-gray-500 mt-1'>
                                     {new Date(item.createdAt).toLocaleString()}

@@ -188,6 +188,70 @@ class DiaryService:
             pages=pages,
         )
 
+    def export_admin_diaries_csv(
+        self,
+        user_id: str | None = None,
+        dominant_emotion: str | None = None,
+        min_mood_score: int | None = None,
+        max_mood_score: int | None = None,
+        limit: int = 5000,
+    ) -> bytes:
+        from app.utils.csv_export import rows_to_csv_bytes
+
+        query = (
+            self.db.query(EmotionDiary)
+            .options(joinedload(EmotionDiary.user))
+            .join(User, EmotionDiary.user_id == User.id)
+        )
+
+        if user_id:
+            try:
+                query = query.filter(EmotionDiary.user_id == int(user_id))
+            except ValueError:
+                pass
+        if dominant_emotion:
+            query = query.filter(EmotionDiary.dominant_emotion == dominant_emotion)
+        if min_mood_score is not None:
+            query = query.filter(EmotionDiary.mood_score >= min_mood_score)
+        if max_mood_score is not None:
+            query = query.filter(EmotionDiary.mood_score <= max_mood_score)
+
+        diaries = (
+            query.order_by(desc(EmotionDiary.diary_date), desc(EmotionDiary.id))
+            .limit(limit)
+            .all()
+        )
+        headers = [
+            "日记ID",
+            "用户ID",
+            "用户名",
+            "日记日期",
+            "主导情绪",
+            "情绪评分",
+            "睡眠质量",
+            "压力等级",
+            "触发因素",
+            "日记内容",
+            "创建时间",
+        ]
+        rows = [
+            [
+                diary.id,
+                diary.user_id,
+                diary.user.username if diary.user else "",
+                diary.diary_date.isoformat(),
+                EMOTION_LABELS.get(diary.dominant_emotion, diary.dominant_emotion),
+                diary.mood_score,
+                diary.sleep_quality,
+                diary.stress_level,
+                diary.emotion_triggers or "",
+                diary.diary_content,
+                _to_iso(diary.created_at),
+            ]
+            for diary in diaries
+        ]
+        return rows_to_csv_bytes(headers, rows)
+
     def delete_diary(self, diary_id: int) -> None:
         diary = self.db.query(EmotionDiary).filter(EmotionDiary.id == diary_id).first()
         if not diary:

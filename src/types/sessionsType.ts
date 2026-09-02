@@ -71,6 +71,7 @@ export interface sessionItemType {
     startedAt: string
     userId: number
     userNickname: string
+    emotionTag?: string
 }
 
 export interface sessionListType {

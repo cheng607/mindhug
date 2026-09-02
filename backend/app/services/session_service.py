@@ -128,6 +128,57 @@ class SessionService:
             pages=pages,
         )
 
+    def export_admin_sessions_csv(
+        self,
+        emotion_tag: str = "",
+        user_id: str | None = None,
+        limit: int = 5000,
+    ) -> bytes:
+        from app.utils.csv_export import rows_to_csv_bytes
+
+        query = self.db.query(ChatSession).options(joinedload(ChatSession.user))
+        if emotion_tag:
+            query = query.filter(ChatSession.emotion_tag == emotion_tag)
+        if user_id:
+            try:
+                query = query.filter(ChatSession.user_id == int(user_id))
+            except ValueError:
+                pass
+
+        sessions = (
+            query.order_by(desc(ChatSession.last_message_time), desc(ChatSession.id))
+            .limit(limit)
+            .all()
+        )
+        headers = [
+            "会话ID",
+            "用户ID",
+            "用户昵称",
+            "会话主题",
+            "情绪标签",
+            "消息数",
+            "时长(分钟)",
+            "开始时间",
+            "最后消息时间",
+            "最后消息摘要",
+        ]
+        rows = [
+            [
+                session.id,
+                session.user_id,
+                session.user.display_name if session.user else "",
+                session.session_title,
+                session.emotion_tag or "",
+                session.message_count,
+                session.duration_minutes,
+                _to_iso(session.started_at),
+                _to_iso(session.last_message_time or session.started_at),
+                session.last_message_content or "",
+            ]
+            for session in sessions
+        ]
+        return rows_to_csv_bytes(headers, rows)
+
     def list_sessions(
         self,
         user: User,
@@ -274,6 +325,113 @@ class SessionService:
         self.db.commit()
         self.db.refresh(message)
         return message
+
+    def _sync_session_from_messages(self, session: ChatSession) -> None:
+        messages = (
+            self.db.query(Message)
+            .filter(Message.session_id == session.id)
+            .order_by(Message.created_at.asc(), Message.id.asc())
+            .all()
+        )
+        session.message_count = len(messages)
+        if messages:
+            last = messages[-1]
+            session.last_message_content = last.content
+            session.last_message_time = last.created_at or session.started_at
+        else:
+            session.last_message_content = ""
+            session.last_message_time = session.started_at
+        session.updated_at = datetime.now(timezone.utc)
+
+    def _delete_messages_from(self, session_id: int, anchor: Message) -> None:
+        later = (
+            self.db.query(Message)
+            .filter(Message.session_id == session_id, Message.id >= anchor.id)
+            .all()
+        )
+        for item in later:
+            self.db.delete(item)
+
+    def _delete_messages_after(self, session_id: int, anchor: Message) -> None:
+        later = (
+            self.db.query(Message)
+            .filter(Message.session_id == session_id, Message.id > anchor.id)
+            .all()
+        )
+        for item in later:
+            self.db.delete(item)
+
+    def update_user_message(
+        self,
+        session_id: int,
+        user: User,
+        message_id: int,
+        content: str,
+    ) -> MessageResponse:
+        session = self._get_owned_session(session_id, user.id)
+        if not session:
+            raise ValueError("会话不存在或无权访问")
+        message = (
+            self.db.query(Message)
+            .filter(Message.session_id == session_id, Message.id == message_id)
+            .first()
+        )
+        if not message:
+            raise ValueError("消息不存在")
+        if message.sender_type != SENDER_USER:
+            raise ValueError("只能编辑用户消息")
+        message.content = content.strip()
+        self._delete_messages_after(session_id, message)
+        self._sync_session_from_messages(session)
+        self.db.commit()
+        self.db.refresh(message)
+        return build_message_response(message)
+
+    def delete_message(self, session_id: int, user: User, message_id: int) -> None:
+        session = self._get_owned_session(session_id, user.id)
+        if not session:
+            raise ValueError("会话不存在或无权访问")
+        message = (
+            self.db.query(Message)
+            .filter(Message.session_id == session_id, Message.id == message_id)
+            .first()
+        )
+        if not message:
+            raise ValueError("消息不存在")
+        self._delete_messages_from(session_id, message)
+        self._sync_session_from_messages(session)
+        self.db.commit()
+
+    def prepare_regenerate(self, session_id: int, user: User, message_id: int) -> str:
+        session = self._get_owned_session(session_id, user.id)
+        if not session:
+            raise ValueError("会话不存在或无权访问")
+        message = (
+            self.db.query(Message)
+            .filter(Message.session_id == session_id, Message.id == message_id)
+            .first()
+        )
+        if not message:
+            raise ValueError("消息不存在")
+        if message.sender_type != SENDER_AI:
+            raise ValueError("只能重新生成 AI 回复")
+        prior_user = (
+            self.db.query(Message)
+            .filter(
+                Message.session_id == session_id,
+                Message.sender_type == SENDER_USER,
+                Message.id < message.id,
+            )
+            .order_by(Message.id.desc())
+            .first()
+        )
+        if not prior_user:
+            raise ValueError("找不到对应的用户消息")
+        user_content = prior_user.content
+        self._delete_messages_from(session_id, message)
+        self._sync_session_from_messages(session)
+        self.db.commit()
+        return user_content
 
     def get_session_user_content(self, session_id: int, user: User) -> str:
         session = self._get_owned_session(session_id, user.id)

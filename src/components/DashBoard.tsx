@@ -5,18 +5,18 @@ import Icon2 from "../assets/icon2.png"
 import Icon3 from "../assets/icon3.png"
 import Icon4 from "../assets/icon4.png"
 import type { analyticsDataType } from "../types/analyType"
-import * as echarts from 'echarts';
+import type { ECharts } from "echarts"
 import { Divider, message } from "antd"
 import { formatDate } from "../utils"
 
 export default function DashBoard() {
     const [data, setData] = useState<analyticsDataType>()
     const emotionChartRef = useRef<HTMLDivElement>(null);
-    const emotionChartInstance = useRef<echarts.ECharts | null>(null);
+    const emotionChartInstance = useRef<ECharts | null>(null);
     const sessionChartRef = useRef<HTMLDivElement>(null)
-    const sessionChartInstance = useRef<echarts.ECharts | null>(null);
+    const sessionChartInstance = useRef<ECharts | null>(null);
     const activeChartRef = useRef<HTMLDivElement>(null)
-    const activeChartInstance = useRef<echarts.ECharts | null>(null);
+    const activeChartInstance = useRef<ECharts | null>(null);
     useEffect(() => {
         const fetchAnalysis = async () => {
             try {
@@ -30,8 +30,8 @@ export default function DashBoard() {
         fetchAnalysis()
     }, [])
 
-    // 初始化情绪图表
-    const initEmotionChart = useCallback(() => {
+    const initEmotionChart = useCallback((echarts: typeof import('echarts')) => {
+        if (!emotionChartRef.current) return
         if (emotionChartInstance.current) {
             emotionChartInstance.current.dispose();
         }
@@ -122,8 +122,8 @@ export default function DashBoard() {
         emotionChartInstance.current.setOption(option);
     }, [data])
 
-    // 初始化咨询会话图表
-    const initSessionChart = useCallback(() => {
+    const initSessionChart = useCallback((echarts: typeof import('echarts')) => {
+        if (!sessionChartRef.current) return
         if (sessionChartInstance.current) {
             sessionChartInstance.current.dispose();
         }
@@ -201,8 +201,9 @@ export default function DashBoard() {
 
         sessionChartInstance.current.setOption(option);
     }, [data])
-    // 初始化用户活跃度图表
-    const initActiveChart = useCallback(() => {
+
+    const initActiveChart = useCallback((echarts: typeof import('echarts')) => {
+        if (!activeChartRef.current) return
         if (activeChartInstance.current) {
             activeChartInstance.current.dispose();
         }
@@ -309,24 +310,27 @@ export default function DashBoard() {
         activeChartInstance.current.setOption(option);
     }, [data])
 
-    const initchart = useCallback(() => {
-        initEmotionChart();
-        initSessionChart();
-        initActiveChart();
-    }, [initEmotionChart, initSessionChart, initActiveChart])
-
     useEffect(() => {
         if (!data || !emotionChartRef.current) return;
-        initchart()
 
-        // 组件卸载时清理图表
+        let disposed = false
+        import('echarts').then((echarts) => {
+            if (disposed) return
+            initEmotionChart(echarts)
+            initSessionChart(echarts)
+            initActiveChart(echarts)
+        })
+
         return () => {
-            if (emotionChartInstance.current) {
-                emotionChartInstance.current.dispose();
-                emotionChartInstance.current = null;
-            }
+            disposed = true
+            emotionChartInstance.current?.dispose()
+            emotionChartInstance.current = null
+            sessionChartInstance.current?.dispose()
+            sessionChartInstance.current = null
+            activeChartInstance.current?.dispose()
+            activeChartInstance.current = null
         };
-    }, [data, initchart])
+    }, [data, initEmotionChart, initSessionChart, initActiveChart])
 
     return (
         <>

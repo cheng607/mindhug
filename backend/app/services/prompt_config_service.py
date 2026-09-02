@@ -42,6 +42,32 @@ class PromptConfigService:
             )
         self.db.commit()
 
+    def sync_prompts_from_code(self) -> None:
+        """将代码中的默认 Prompt 同步到数据库（版本升级时自动生效）。"""
+        for key, prompt in AGENT_PROMPTS.items():
+            intent: IntentType = key  # type: ignore[assignment]
+            config = (
+                self.db.query(AgentPromptConfig)
+                .filter(AgentPromptConfig.agent_key == key)
+                .first()
+            )
+            if config:
+                config.system_prompt = prompt
+                config.agent_name = AGENT_NAMES[intent]
+            else:
+                self.db.add(
+                    AgentPromptConfig(
+                        agent_key=key,
+                        agent_name=AGENT_NAMES[intent],
+                        system_prompt=prompt,
+                        model=settings.llm_model,
+                        temperature=settings.LLM_TEMPERATURE,
+                        max_tokens=settings.LLM_MAX_TOKENS,
+                        is_active=1,
+                    )
+                )
+        self.db.commit()
+
     def list_configs(self) -> list[AgentPromptConfigResponse]:
         configs = (
             self.db.query(AgentPromptConfig)
@@ -59,6 +85,24 @@ class PromptConfigService:
         if config:
             return config.system_prompt
         return AGENT_PROMPTS[agent_key]
+
+    def get_llm_params(self, agent_key: IntentType) -> dict[str, str | float | int]:
+        config = (
+            self.db.query(AgentPromptConfig)
+            .filter(AgentPromptConfig.agent_key == agent_key, AgentPromptConfig.is_active == 1)
+            .first()
+        )
+        if config:
+            return {
+                "model": config.model or settings.llm_model,
+                "temperature": config.temperature,
+                "max_tokens": config.max_tokens,
+            }
+        return {
+            "model": settings.llm_model,
+            "temperature": settings.LLM_TEMPERATURE,
+            "max_tokens": settings.LLM_MAX_TOKENS,
+        }
 
     def get_config(self, agent_key: str) -> AgentPromptConfig:
         config = (

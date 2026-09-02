@@ -60,6 +60,58 @@ class LoginResponse(BaseModel):
     roleType: str
 
 
+class UpdateProfileRequest(BaseModel):
+    nickname: str | None = Field(None, max_length=50)
+    phone: str | None = Field(None, max_length=20)
+    gender: int | None = Field(None, ge=1, le=2)
+
+
+class ChangePasswordRequest(BaseModel):
+    oldPassword: str = Field(..., min_length=1)
+    newPassword: str = Field(..., min_length=6)
+    confirmPassword: str = Field(..., min_length=6)
+
+    @field_validator("confirmPassword")
+    @classmethod
+    def passwords_match(cls, v: str, info: ValidationInfo) -> str:
+        if info.data.get("newPassword") and v != info.data["newPassword"]:
+            raise ValueError("两次输入的新密码不一致")
+        return v
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(..., min_length=10)
+    newPassword: str = Field(..., min_length=6)
+    confirmPassword: str = Field(..., min_length=6)
+
+    @field_validator("confirmPassword")
+    @classmethod
+    def passwords_match(cls, v: str, info: ValidationInfo) -> str:
+        if info.data.get("newPassword") and v != info.data["newPassword"]:
+            raise ValueError("两次输入的新密码不一致")
+        return v
+
+
+class AdminUserPageResponse(BaseModel):
+    records: list[UserInfoResponse]
+    total: int
+    size: int
+    current: int
+    pages: int
+
+
+class UpdateUserStatusRequest(BaseModel):
+    status: int = Field(..., ge=0, le=1)
+
+
+class UpdateUserRoleRequest(BaseModel):
+    roleCode: int = Field(..., ge=1, le=2)
+
+
 def build_user_info(user) -> UserInfoResponse:
     return UserInfoResponse(
         id=user.id,

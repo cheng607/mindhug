@@ -1,6 +1,10 @@
-/** 生成唯一消息 ID */
-export const generateUniqueId = () =>
-    Math.floor(Math.random() * 1000000000) + Date.now()
+let messageSeq = 0
+
+/** 生成单调递增的消息 ID，保证同会话内顺序稳定 */
+export const generateUniqueId = () => {
+    messageSeq = (messageSeq + 1) % 1000
+    return Date.now() * 1000 + messageSeq
+}
 
 /** 合并流式分片，兼容增量、累计和重叠片段，避免内容重复 */
 export const mergeStreamChunk = (existing: string, incoming: string) => {

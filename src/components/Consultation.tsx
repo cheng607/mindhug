@@ -1,7 +1,15 @@
-import { message } from 'antd'
+import { Input, Modal, message } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { createChat, deleteSession, getAnalysisResult, getSessionDetail, getSessionsByPage } from '../apis/sessions'
+import {
+    createChat,
+    deleteMessage,
+    deleteSession,
+    getAnalysisResult,
+    getSessionDetail,
+    getSessionsByPage,
+    updateMessage,
+} from '../apis/sessions'
 import AgentCard from './chat/AgentCard'
 import ChatHeader from './chat/ChatHeader'
 import ChatWindow from './chat/ChatWindow'
@@ -15,6 +23,8 @@ import type { emotionAnalysType, newChatParam, sessionDetailType, sessionItemTyp
 import { generateUniqueId } from '../utils/stream'
 import { normalizeSessionId } from '../utils'
 
+const isPersistedMessageId = (id: number) => Number.isInteger(id) && id > 0 && id < 1_000_000_000
+
 export default function Consultation() {
     const location = useLocation()
     const [isDisabled, setIsDisabled] = useState(false)
@@ -24,6 +34,19 @@ export default function Consultation() {
     const [chatList, setChatList] = useState<sessionDetailType[]>([])
     const [currentEmotion, setCurrentEmotion] = useState<emotionAnalysType>()
     const [crisisModalOpen, setCrisisModalOpen] = useState(false)
+    const [emotionTagFilter, setEmotionTagFilter] = useState('')
+    const [editOpen, setEditOpen] = useState(false)
+    const [editContent, setEditContent] = useState('')
+    const [editingMessage, setEditingMessage] = useState<sessionDetailType | null>(null)
+
+    const reloadMessages = useCallback(async (sessionId: string) => {
+        try {
+            const res = await getSessionDetail(sessionId)
+            setChatList(res?.data && Array.isArray(res.data) ? res.data : [])
+        } catch (error) {
+            console.error('刷新消息失败:', error)
+        }
+    }, [])
 
     const getEmotion = useCallback(async (sessionId: string) => {
         try {
@@ -37,14 +60,13 @@ export default function Consultation() {
         }
     }, [])
 
-    const { isAiTyping, setIsAiTyping, sendMessageToAI, abortStream, activeAgent } = useChatStream({
-        onStreamClose: getEmotion,
-        onCrisisDetected: () => setCrisisModalOpen(true),
-    })
-
     const getSessionsList = useCallback(async () => {
         try {
-            const res = await getSessionsByPage({ pageNum: '1', pageSize: '20' })
+            const res = await getSessionsByPage({
+                pageNum: '1',
+                pageSize: '20',
+                emotionTag: emotionTagFilter || undefined,
+            })
             if (res?.data?.records) {
                 setList(res.data.records)
             } else {
@@ -60,7 +82,18 @@ export default function Consultation() {
                 message.error(errMsg)
             }
         }
-    }, [])
+    }, [emotionTagFilter])
+
+    const handleStreamClose = useCallback(async (sessionId: string) => {
+        await reloadMessages(sessionId)
+        await getEmotion(sessionId)
+        await getSessionsList()
+    }, [reloadMessages, getEmotion, getSessionsList])
+
+    const { isAiTyping, setIsAiTyping, sendMessageToAI, regenerateMessage, abortStream, activeAgent } = useChatStream({
+        onStreamClose: handleStreamClose,
+        onCrisisDetected: () => setCrisisModalOpen(true),
+    })
 
     useEffect(() => {
         getSessionsList()
@@ -196,21 +229,72 @@ export default function Consultation() {
         await getSessionsList()
     }
 
+    const handleEditMessage = (item: sessionDetailType) => {
+        if (!currentSession?.sessionId || !isPersistedMessageId(item.id)) {
+            message.warning('请等待消息保存后再编辑')
+            return
+        }
+        setEditingMessage(item)
+        setEditContent(item.content)
+        setEditOpen(true)
+    }
+
+    const handleConfirmEdit = async () => {
+        if (!editingMessage || !currentSession?.sessionId || !editContent.trim()) return
+        try {
+            await updateMessage(currentSession.sessionId, editingMessage.id, editContent.trim())
+            message.success('消息已更新')
+            setEditOpen(false)
+            await reloadMessages(currentSession.sessionId)
+            await getSessionsList()
+        } catch (error) {
+            message.error((error as Error).message || '更新失败')
+        }
+    }
+
+    const handleDeleteMessage = async (item: sessionDetailType) => {
+        if (!currentSession?.sessionId || !isPersistedMessageId(item.id)) {
+            message.warning('请等待消息保存后再删除')
+            return
+        }
+        try {
+            await deleteMessage(currentSession.sessionId, item.id)
+            message.success('已删除')
+            await reloadMessages(currentSession.sessionId)
+            await getSessionsList()
+        } catch (error) {
+            message.error((error as Error).message || '删除失败')
+        }
+    }
+
+    const handleRegenerateMessage = async (item: sessionDetailType) => {
+        if (!currentSession?.sessionId || !isPersistedMessageId(item.id) || isAiTyping) return
+        await regenerateMessage(currentSession.sessionId, item.id, setChatList)
+    }
+
     return (
-        <div className='flex bg-white w-4/5 mx-auto'>
-            <div className='p-5 flex flex-col gap-5 mx-10'>
+        <div className='flex flex-col lg:flex-row bg-white w-full max-w-6xl mx-auto px-2 sm:px-4 py-4 gap-4'>
+            <div className='p-3 sm:p-5 flex flex-col gap-4 lg:gap-5 lg:w-72 shrink-0 order-2 lg:order-1'>
                 <AgentCard />
                 <EmotionGarden emotion={currentEmotion} />
                 <SessionList
                     sessions={list}
+                    emotionTagFilter={emotionTagFilter}
+                    onEmotionTagFilterChange={setEmotionTagFilter}
                     onSessionClick={handleSessionClick}
                     onDeleteSession={handleDeleteSession}
                 />
             </div>
-            <div className='border-1 p-5 h-full shadow-md rounded-lg flex flex-col w-[700px]'>
+            <div className='border p-3 sm:p-5 shadow-md rounded-lg flex flex-col w-full lg:flex-1 min-w-0 min-h-[60vh] order-1 lg:order-2'>
                 <ChatHeader onNewSession={handleNew} activeAgent={activeAgent} />
                 <AiDisclaimerBanner />
-                <ChatWindow messages={chatList} isAiTyping={isAiTyping} />
+                <ChatWindow
+                    messages={chatList}
+                    isAiTyping={isAiTyping}
+                    onEditMessage={handleEditMessage}
+                    onDeleteMessage={handleDeleteMessage}
+                    onRegenerateMessage={handleRegenerateMessage}
+                />
                 <MessageInput
                     value={msg}
                     disabled={isDisabled || isAiTyping}
@@ -222,6 +306,20 @@ export default function Consultation() {
                 open={crisisModalOpen}
                 onClose={() => setCrisisModalOpen(false)}
             />
+            <Modal
+                title="编辑消息"
+                open={editOpen}
+                onOk={handleConfirmEdit}
+                onCancel={() => setEditOpen(false)}
+                destroyOnClose
+            >
+                <Input.TextArea
+                    rows={4}
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    maxLength={2000}
+                />
+            </Modal>
         </div>
     )
 }
