@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react'
 import { message } from 'antd'
 import { fetchEventSource } from '@microsoft/fetch-event-source'
 import { apiBaseUrl } from '../config'
-import type { sessionDetailType } from '../types/sessionsType'
+import type { sessionDetailType, CitationType } from '../types/sessionsType'
 import { generateUniqueId, mergeStreamChunk } from '../utils/stream'
 
 interface UseChatStreamOptions {
@@ -84,6 +84,20 @@ export function useChatStream(options: UseChatStreamOptions = {}) {
                         }
                         if (payload.agentName) {
                             setActiveAgent(payload.agentName)
+                        }
+                        if (Array.isArray(payload.citations) && payload.citations.length > 0) {
+                            setChatList(prev => {
+                                const newList = [...prev]
+                                const lastIndex = newList.length - 1
+                                const lastMessage = newList[lastIndex]
+                                if (lastMessage && lastMessage.senderType === 2) {
+                                    newList[lastIndex] = {
+                                        ...lastMessage,
+                                        citations: payload.citations as CitationType[],
+                                    }
+                                }
+                                return newList
+                            })
                         }
                         const chunk = payload.content ?? payload.data?.content
                         if (typeof chunk === 'string' && chunk.length > 0) {

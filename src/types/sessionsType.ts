@@ -33,7 +33,15 @@ export interface sessionDetailType {
     messageTypeDesc: string,
     senderType: number,
     senderTypeDesc: string,
-    sessionId: number
+    sessionId: number,
+    citations?: CitationType[]
+}
+
+export interface CitationType {
+    articleId: string
+    title: string
+    snippet: string
+    score?: number
 }
 
 export interface newChatParam {

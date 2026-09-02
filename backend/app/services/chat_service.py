@@ -37,6 +37,7 @@ async def stream_chat(
     )
 
     accumulated = ""
+    citations: list[dict] | None = None
     async for event in agent_graph.stream(db, session_id, user.id, history, user_message):
         yield event
         if not event.startswith("data: "):
@@ -48,10 +49,12 @@ async def stream_chat(
             payload = json.loads(payload_str)
             if "content" in payload:
                 accumulated += payload["content"]
+            if "citations" in payload and payload["citations"]:
+                citations = payload["citations"]
         except json.JSONDecodeError:
             pass
 
     if accumulated.strip():
-        service.save_ai_message(session_id, user, accumulated)
+        service.save_ai_message(session_id, user, accumulated, citations=citations)
 
     yield "data: [DONE]\n\n"

@@ -8,6 +8,11 @@ from collections.abc import AsyncGenerator
 
 from sqlalchemy.orm import Session
 
+from app.agents.knowledge import (
+    build_knowledge_messages,
+    build_knowledge_mock_reply,
+    retrieve_knowledge,
+)
 from app.agents.prompts import AGENT_PROMPTS
 from app.agents.router import classify_intent
 from app.agents.types import AGENT_NAMES, IntentType
@@ -17,15 +22,11 @@ from app.models.chat_session import SENDER_AI, SENDER_USER
 from app.models.message import Message
 from app.prompts.counselor import CRISIS_RESPONSE_TEMPLATE
 from app.services.llm_service import llm_service
+from app.services.prompt_config_service import PromptConfigService
+from app.services.risk_alert_service import RiskAlertService
 from app.services.session_service import CRISIS_KEYWORDS, MOCK_AI_RESPONSE
 
 logger = logging.getLogger(__name__)
-
-KNOWLEDGE_MOCK = (
-    "心理健康是指个体在情绪、认知和行为方面处于良好状态。"
-    "保持心理健康的方法包括：规律作息、适度运动、社交连接和情绪表达。\n\n"
-    "你可以在平台「知识库」中浏览更多心理健康科普文章。"
-)
 
 LISTENER_MOCK = (
     "我能感受到你现在的不容易。愿意把这些感受说出来，本身就是很重要的一步。\n\n"
@@ -35,13 +36,15 @@ LISTENER_MOCK = (
 
 
 def build_agent_messages(
+    db: Session,
     history: list[Message],
     intent: IntentType,
     max_messages: int | None = None,
 ) -> list[dict[str, str]]:
     limit = max_messages or settings.LLM_MAX_CONTEXT_MESSAGES
     recent = history[-limit:] if len(history) > limit else history
-    system_prompt = AGENT_PROMPTS[intent]
+    prompt_service = PromptConfigService(db)
+    system_prompt = prompt_service.get_prompt(intent)
 
     messages: list[dict[str, str]] = [{"role": "system", "content": system_prompt}]
     for msg in recent:
@@ -50,11 +53,11 @@ def build_agent_messages(
     return messages
 
 
-def build_mock_reply(user_message: str, intent: IntentType) -> str:
+def build_mock_reply(user_message: str, intent: IntentType, citations=None) -> str:
     if intent == "crisis" or any(kw in user_message for kw in CRISIS_KEYWORDS):
         return CRISIS_RESPONSE_TEMPLATE
     if intent == "knowledge":
-        return KNOWLEDGE_MOCK
+        return build_knowledge_mock_reply(user_message, citations or [])
     if intent == "counsel":
         if re.search(r"(建议|怎么办|如何|帮助)", user_message):
             return (
@@ -94,6 +97,32 @@ def log_agent_execution(
     db.commit()
 
 
+def maybe_create_risk_alert(
+    db: Session,
+    session_id: int,
+    user_id: int,
+    user_message: str,
+    intent: IntentType,
+) -> None:
+    if intent == "crisis":
+        RiskAlertService(db).create_alert(
+            user_id=user_id,
+            session_id=session_id,
+            risk_level=3,
+            trigger_reason="危机信号检测",
+            user_message=user_message,
+        )
+        return
+    if any(kw in user_message for kw in CRISIS_KEYWORDS):
+        RiskAlertService(db).create_alert(
+            user_id=user_id,
+            session_id=session_id,
+            risk_level=3,
+            trigger_reason="危机关键词匹配",
+            user_message=user_message,
+        )
+
+
 async def _stream_text_as_sse(text: str, chunk_size: int = 4, delay: float = 0.03) -> AsyncGenerator[str, None]:
     for index in range(0, len(text), chunk_size):
         chunk = text[index : index + chunk_size]
@@ -117,15 +146,31 @@ class AgentGraph:
         intent = classify_intent(user_message)
         agent_name = AGENT_NAMES[intent]
 
+        maybe_create_risk_alert(db, session_id, user_id, user_message, intent)
+
         meta = json.dumps({"agent": intent, "agentName": agent_name}, ensure_ascii=False)
         yield f"data: {meta}\n\n"
+
+        citations = []
+        rag_context = ""
+        if intent == "knowledge":
+            citations, rag_context = await retrieve_knowledge(db, user_message)
+            if citations:
+                cite_payload = json.dumps(
+                    {"citations": [item.to_dict() for item in citations]},
+                    ensure_ascii=False,
+                )
+                yield f"data: {cite_payload}\n\n"
 
         accumulated = ""
         llm_used = False
 
         if llm_service.enabled:
             try:
-                messages = build_agent_messages(history, intent)
+                if intent == "knowledge":
+                    messages = build_knowledge_messages(db, history, user_message, rag_context)
+                else:
+                    messages = build_agent_messages(db, history, intent)
                 async for chunk in llm_service.chat_stream(messages):
                     accumulated += chunk
                     llm_used = True
@@ -133,12 +178,12 @@ class AgentGraph:
                     yield f"data: {payload}\n\n"
             except Exception as exc:
                 logger.error("Agent %s LLM 失败，回退 mock: %s", intent, exc)
-                reply = build_mock_reply(user_message, intent)
+                reply = build_mock_reply(user_message, intent, citations)
                 accumulated = reply
                 async for event in _stream_text_as_sse(reply):
                     yield event
         else:
-            reply = build_mock_reply(user_message, intent)
+            reply = build_mock_reply(user_message, intent, citations)
             accumulated = reply
             async for event in _stream_text_as_sse(reply):
                 yield event

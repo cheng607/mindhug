@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkBreaks from 'remark-breaks'
 import remarkGfm from 'remark-gfm'
-import { UserOutlined } from '@ant-design/icons'
+import { BookOutlined, UserOutlined } from '@ant-design/icons'
 import AgentIcon from '../../assets/agent4.png'
 import type { sessionDetailType } from '../../types/sessionsType'
 import Empty from '../common/Empty'
@@ -44,11 +45,33 @@ export default function ChatWindow({ messages, isAiTyping }: ChatWindowProps) {
         }
         if (item.senderType === 2) {
             return (
-                <div className='whitespace-pre-wrap break-words [&_p]:my-1 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-1'>
-                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
-                        {content}
-                    </ReactMarkdown>
-                </div>
+                <>
+                    <div className='whitespace-pre-wrap break-words [&_p]:my-1 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-1'>
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+                            {content}
+                        </ReactMarkdown>
+                    </div>
+                    {item.citations && item.citations.length > 0 && (
+                        <div className='mt-3 pt-2 border-t border-orange-200'>
+                            <div className='text-xs text-gray-500 mb-1 flex items-center gap-1'>
+                                <BookOutlined />
+                                <span>参考来源</span>
+                            </div>
+                            <div className='flex flex-col gap-1'>
+                                {item.citations.map((cite, index) => (
+                                    <Link
+                                        key={`${cite.articleId}-${index}`}
+                                        to={`/article/${cite.articleId}`}
+                                        className='text-xs text-blue-600 hover:text-blue-800 hover:underline text-left'
+                                        target='_blank'
+                                    >
+                                        《{cite.title}》
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </>
             )
         }
         return <span className='whitespace-pre-wrap break-words'>{content}</span>

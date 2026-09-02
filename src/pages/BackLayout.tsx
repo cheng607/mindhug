@@ -1,24 +1,40 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     MenuFoldOutlined,
     MenuUnfoldOutlined,
     MailOutlined,
     PieChartOutlined,
     MessageOutlined,
-    UserOutlined
+    UserOutlined,
+    WarningOutlined,
+    RobotOutlined,
 } from '@ant-design/icons';
-import { Avatar, Button, Layout, Menu, theme, Dropdown, Space, message } from 'antd';
+import { Avatar, Badge, Button, Layout, Menu, theme, Dropdown, Space, message } from 'antd';
 import type { DropdownProps, MenuProps } from 'antd';
 import AgentIcon from '../assets/agent.png'
 import { useUserStore } from '../store/userStore';
 import { logout } from '../apis/user';
+import { getPendingAlertCount } from '../apis/admin';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { fileBaseUrl } from '../config';
 const { Header, Sider, Content } = Layout;
 function BackLayout() {
     const [collapsed, setCollapsed] = useState(false);
+    const [pendingAlertCount, setPendingAlertCount] = useState(0);
     const location = useLocation();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const fetchPendingCount = async () => {
+            try {
+                const res = await getPendingAlertCount();
+                setPendingAlertCount(res.data?.count ?? 0);
+            } catch {
+                setPendingAlertCount(0);
+            }
+        };
+        fetchPendingCount();
+    }, [location.pathname]);
 
     // 菜单配置
     const menuMap = [
@@ -45,6 +61,25 @@ function BackLayout() {
             path: '/back/emotional',
             icon: <UserOutlined />,
             label: '情绪日志',
+        },
+        {
+            key: '5',
+            path: '/back/risk-alerts',
+            icon: <WarningOutlined />,
+            label: (
+                <span className="flex items-center justify-between gap-2">
+                    <span>风险预警</span>
+                    {pendingAlertCount > 0 && (
+                        <Badge count={pendingAlertCount} size="small" />
+                    )}
+                </span>
+            ),
+        },
+        {
+            key: '6',
+            path: '/back/agent-config',
+            icon: <RobotOutlined />,
+            label: 'Agent 配置',
         }
     ]
 

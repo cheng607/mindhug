@@ -37,6 +37,9 @@ class KnowledgeArticle(Base):
     category: Mapped["KnowledgeCategory"] = relationship(
         "KnowledgeCategory", back_populates="articles"
     )
+    chunks: Mapped[list["ArticleChunk"]] = relationship(
+        "ArticleChunk", back_populates="article", cascade="all, delete-orphan"
+    )
 
     @property
     def status_text(self) -> str:

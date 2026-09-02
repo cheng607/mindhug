@@ -5,8 +5,11 @@ from app.core.database import get_db
 from app.core.deps import get_admin_user, get_current_user, get_optional_user
 from app.core.response import error_response, success_response
 from app.models.user import User
+from app.models.knowledge_article import STATUS_DRAFT, STATUS_PUBLISHED
+from app.models.article_chunk import ArticleChunk
 from app.schemas.knowledge import ArticleCreateRequest, ArticleStatusRequest, ArticleUpdateRequest
 from app.services.knowledge_service import KnowledgeService, build_article_response
+from app.services.rag_service import RAGService
 
 router = APIRouter(prefix="/knowledge", tags=["knowledge"])
 
@@ -92,7 +95,7 @@ def get_article(
 
 
 @router.put("/article/{article_id}")
-def update_article(
+async def update_article(
     article_id: int,
     payload: ArticleUpdateRequest,
     _admin: User = Depends(get_admin_user),
@@ -101,6 +104,8 @@ def update_article(
     service = KnowledgeService(db)
     try:
         article = service.update_article(article_id, payload)
+        if article.status == STATUS_PUBLISHED:
+            await RAGService(db).index_article(article)
     except ValueError as exc:
         return error_response("404", str(exc), status_code=404)
     return success_response(
@@ -110,7 +115,7 @@ def update_article(
 
 
 @router.put("/article/{article_id}/status")
-def update_article_status(
+async def update_article_status(
     article_id: int,
     payload: ArticleStatusRequest,
     _admin: User = Depends(get_admin_user),
@@ -119,6 +124,11 @@ def update_article_status(
     service = KnowledgeService(db)
     try:
         article = service.update_article_status(article_id, payload.status)
+        if article.status == STATUS_PUBLISHED:
+            await RAGService(db).index_article(article)
+        elif payload.status == STATUS_DRAFT:
+            db.query(ArticleChunk).filter(ArticleChunk.article_id == article_id).delete()
+            db.commit()
     except ValueError as exc:
         return error_response("404", str(exc), status_code=404)
     return success_response(

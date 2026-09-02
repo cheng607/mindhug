@@ -1,5 +1,6 @@
 import math
 import re
+import json
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import desc
@@ -40,6 +41,12 @@ def _to_iso(dt: datetime | None) -> str:
 
 
 def build_message_response(message: Message) -> MessageResponse:
+    citations = None
+    if message.citations:
+        try:
+            citations = json.loads(message.citations)
+        except json.JSONDecodeError:
+            citations = None
     return MessageResponse(
         id=message.id,
         sessionId=message.session_id,
@@ -51,6 +58,7 @@ def build_message_response(message: Message) -> MessageResponse:
         messageType=message.message_type,
         messageTypeDesc=message.message_type_desc,
         createdAt=_to_iso(message.created_at),
+        citations=citations,
     )
 
 
@@ -169,12 +177,19 @@ class SessionService:
         self.db.delete(session)
         self.db.commit()
 
-    def _add_message(self, session: ChatSession, content: str, sender_type: int) -> Message:
+    def _add_message(
+        self,
+        session: ChatSession,
+        content: str,
+        sender_type: int,
+        citations: list[dict] | None = None,
+    ) -> Message:
         now = datetime.now(timezone.utc)
         message = Message(
             session_id=session.id,
             content=content,
             sender_type=sender_type,
+            citations=json.dumps(citations, ensure_ascii=False) if citations else None,
         )
         self.db.add(message)
         session.message_count += 1
@@ -192,11 +207,17 @@ class SessionService:
         self.db.refresh(session)
         return session
 
-    def save_ai_message(self, session_id: int, user: User, content: str) -> Message:
+    def save_ai_message(
+        self,
+        session_id: int,
+        user: User,
+        content: str,
+        citations: list[dict] | None = None,
+    ) -> Message:
         session = self._get_owned_session(session_id, user.id)
         if not session:
             raise ValueError("会话不存在或无权访问")
-        message = self._add_message(session, content, SENDER_AI)
+        message = self._add_message(session, content, SENDER_AI, citations=citations)
         self.db.commit()
         self.db.refresh(message)
         return message

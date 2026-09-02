@@ -62,6 +62,7 @@ class MessageResponse(BaseModel):
     messageType: int
     messageTypeDesc: str
     createdAt: str
+    citations: list[dict] | None = None
 
 
 class EmotionAnalysisResponse(BaseModel):

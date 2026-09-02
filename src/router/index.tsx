@@ -17,6 +17,8 @@ import Default from "../components/Default";
 import KnowledgeBase from "../components/KnowledgeBase";
 import Article from "../components/Article";
 import Profile from "../pages/Profile";
+import RiskAlertCenter from "../components/RiskAlertCenter";
+import AgentConfig from "../components/AgentConfig";
 
 const userRoutes = {
     path: '/user',
@@ -48,6 +50,8 @@ const backRoutes = {
         { path: 'Knowledge', element: <Knowledge /> },
         { path: 'consultations', element: <Consultations /> },
         { path: 'emotional', element: <Emotional /> },
+        { path: 'risk-alerts', element: <RiskAlertCenter /> },
+        { path: 'agent-config', element: <AgentConfig /> },
     ]
 }
 

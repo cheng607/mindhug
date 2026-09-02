@@ -10,6 +10,7 @@ from app.schemas.session import StartSessionRequest, StreamChatRequest
 from app.services.session_service import SessionService, parse_session_id
 from app.services.chat_service import stream_chat as chat_stream_generator
 from app.services.emotion_service import analyze_session_emotion
+from app.services.risk_alert_service import RiskAlertService
 
 router = APIRouter(prefix="/psychological-chat", tags=["psychological-chat"])
 
@@ -139,6 +140,14 @@ async def get_session_emotion(
     try:
         content = service.get_session_user_content(sid, current_user)
         data = await analyze_session_emotion(content)
+        if data.riskLevel >= 2:
+            RiskAlertService(db).create_alert(
+                user_id=current_user.id,
+                session_id=sid,
+                risk_level=data.riskLevel,
+                trigger_reason="情绪分析预警",
+                user_message=content[:500],
+            )
     except ValueError as exc:
         return error_response("404", str(exc), status_code=404)
     return success_response(data=data.model_dump(), msg="查询成功")

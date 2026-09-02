@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     LLM_MAX_TOKENS: int = 1024
     LLM_TEMPERATURE: float = 0.7
 
+    # Embedding（RAG）
+    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    RAG_TOP_K: int = 3
+
     @property
     def llm_enabled(self) -> bool:
         return self.LLM_PROVIDER != "mock" and bool(self.LLM_API_KEY.strip())

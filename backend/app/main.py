@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
+import logging
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -7,16 +8,23 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.api.agent_config import router as agent_config_router
 from app.api.analytics import router as analytics_router
 from app.api.diary import router as diary_router
 from app.api.files import router as files_router
 from app.api.knowledge import router as knowledge_router
+from app.api.rag import router as rag_router
+from app.api.risk_alerts import router as risk_alerts_router
 from app.api.sessions import router as sessions_router
 from app.api.user import router as user_router
 from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
 from app.models.role import Role
+from app.services.prompt_config_service import PromptConfigService
+from app.services.rag_service import RAGService
 from app.services.seed_service import seed_knowledge
+
+logger = logging.getLogger(__name__)
 
 
 def seed_roles() -> None:
@@ -32,6 +40,19 @@ def seed_roles() -> None:
                 db.add(Role(**item))
         db.commit()
         seed_knowledge(db)
+        PromptConfigService(db).seed_defaults()
+    finally:
+        db.close()
+
+
+async def seed_rag_index() -> None:
+    db = SessionLocal()
+    try:
+        rag = RAGService(db)
+        count = await rag.index_all_published()
+        logger.info("RAG 启动索引完成，共 %s 个分块", count)
+    except Exception as exc:
+        logger.warning("RAG 启动索引失败: %s", exc)
     finally:
         db.close()
 
@@ -40,6 +61,7 @@ def seed_roles() -> None:
 async def lifespan(_app: FastAPI):
     Base.metadata.create_all(bind=engine)
     seed_roles()
+    await seed_rag_index()
     yield
 
 
@@ -98,6 +120,9 @@ app.include_router(diary_router, prefix="/api")
 app.include_router(knowledge_router, prefix="/api")
 app.include_router(files_router, prefix="/api")
 app.include_router(analytics_router, prefix="/api")
+app.include_router(risk_alerts_router, prefix="/api")
+app.include_router(agent_config_router, prefix="/api")
+app.include_router(rag_router, prefix="/api")
 
 
 @app.get("/health")
