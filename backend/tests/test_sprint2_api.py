@@ -45,6 +45,7 @@ def auth_headers(client: TestClient):
         "password": "123456",
         "confirmPassword": "123456",
         "gender": 1,
+        "agreeTerms": True,
     }
     client.post("/api/user/add", json=payload)
     login_resp = client.post(

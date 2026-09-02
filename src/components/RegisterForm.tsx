@@ -1,4 +1,4 @@
-import { Button, Form, Input, message } from 'antd';
+import { Button, Checkbox, Form, Input, message } from 'antd';
 import type { RegisterParams } from '../types/userType';
 import { register } from '../apis/user';
 import { Link, useNavigate } from 'react-router-dom';
@@ -32,7 +32,8 @@ export default function RegisterForm() {
                     userType: 1,
                     gender: 1,
                     phone: '',
-                    nickname: ''
+                    nickname: '',
+                    agreeTerms: false,
                 }}
                 onFinish={onFinish}
                 className='flex flex-col'
@@ -114,6 +115,24 @@ export default function RegisterForm() {
                 </Form.Item>
                 <Form.Item name="userType" hidden>
                     <Input type="hidden" />
+                </Form.Item>
+                <Form.Item
+                    name="agreeTerms"
+                    valuePropName="checked"
+                    rules={[
+                        {
+                            validator: (_, value) =>
+                                value ? Promise.resolve() : Promise.reject(new Error('请阅读并同意用户协议')),
+                        },
+                    ]}
+                    className="w-80 mb-1"
+                >
+                    <Checkbox>
+                        我已阅读并同意
+                        <Link to="/agreement" target="_blank" className="text-purple-900 mx-1">用户协议</Link>
+                        和
+                        <Link to="/privacy" target="_blank" className="text-purple-900 mx-1">隐私政策</Link>
+                    </Checkbox>
                 </Form.Item>
                 <Form.Item>
                     <Button block type="primary" htmlType="submit" className='my-5'>

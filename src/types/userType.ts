@@ -38,7 +38,8 @@ export interface RegisterParams {
     password: string,
     confirmPassword: string,
     gender: number, // 1 男 2 女
-    userType: number    // 权限（默认传1）
+    userType: number,    // 权限（默认传1）
+    agreeTerms: boolean,
 }
 
 export interface LoginResponse {

@@ -22,7 +22,7 @@ MOCK_AI_RESPONSE = (
     "如果愿意，也可以告诉我：最近最让你困扰的具体事情是什么？"
 )
 
-CRISIS_KEYWORDS = ("自杀", "不想活", "结束生命", "自残", "割腕")
+from app.core.crisis import CRISIS_KEYWORDS
 
 
 def parse_session_id(session_id: str) -> int:

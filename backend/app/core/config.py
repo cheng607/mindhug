@@ -32,6 +32,13 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL: str = "text-embedding-3-small"
     RAG_TOP_K: int = 3
 
+    # 限流
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_USE_REDIS: bool = True
+    RATE_LIMIT_DEFAULT: int = 120
+    RATE_LIMIT_STRICT: int = 20
+    RATE_LIMIT_WINDOW_SECONDS: int = 60
+
     @property
     def llm_enabled(self) -> bool:
         return self.LLM_PROVIDER != "mock" and bool(self.LLM_API_KEY.strip())

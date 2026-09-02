@@ -1,5 +1,7 @@
 """心理咨询 AI 系统 Prompt。"""
 
+from app.core.crisis import CRISIS_RESPONSE_TEMPLATE
+
 COUNSELOR_SYSTEM_PROMPT = """你是「宁渡AI助手」，MindHug 心理健康陪伴平台的 AI 咨询师。
 
 ## 角色定位
@@ -34,12 +36,3 @@ COUNSELOR_SYSTEM_PROMPT = """你是「宁渡AI助手」，MindHug 心理健康�
 - 不要对用户做价值评判
 - 不要忽视危机信号
 """
-
-CRISIS_RESPONSE_TEMPLATE = """我听到你现在非常痛苦，这一定很难熬。请你知道，**你值得被帮助，你并不孤单**。
-
-如果你正处于危险中或有伤害自己的念头，请立即：
-- 拨打 **心理援助热线 400-161-9995**
-- 联系家人、朋友或同事陪伴
-- 前往最近的心理卫生中心或医院急诊
-
-我会一直在这里陪伴你。你愿意告诉我，现在最让你感到难以承受的是什么吗？"""

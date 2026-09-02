@@ -8,6 +8,8 @@ import ChatWindow from './chat/ChatWindow'
 import EmotionGarden from './chat/EmotionGarden'
 import MessageInput from './chat/MessageInput'
 import SessionList from './chat/SessionList'
+import AiDisclaimerBanner from './chat/AiDisclaimerBanner'
+import CrisisInterventionModal from './chat/CrisisInterventionModal'
 import { useChatStream } from '../hooks/useChatStream'
 import type { emotionAnalysType, newChatParam, sessionDetailType, sessionItemType } from '../types/sessionsType'
 import { generateUniqueId } from '../utils/stream'
@@ -21,11 +23,15 @@ export default function Consultation() {
     const [list, setList] = useState<sessionItemType[]>([])
     const [chatList, setChatList] = useState<sessionDetailType[]>([])
     const [currentEmotion, setCurrentEmotion] = useState<emotionAnalysType>()
+    const [crisisModalOpen, setCrisisModalOpen] = useState(false)
 
     const getEmotion = useCallback(async (sessionId: string) => {
         try {
             const res = await getAnalysisResult(normalizeSessionId(sessionId))
             setCurrentEmotion(res.data)
+            if (res.data && (res.data.riskLevel ?? 0) >= 3) {
+                setCrisisModalOpen(true)
+            }
         } catch (error) {
             console.error('获取分析结果失败:', error)
         }
@@ -33,6 +39,7 @@ export default function Consultation() {
 
     const { isAiTyping, setIsAiTyping, sendMessageToAI, abortStream, activeAgent } = useChatStream({
         onStreamClose: getEmotion,
+        onCrisisDetected: () => setCrisisModalOpen(true),
     })
 
     const getSessionsList = useCallback(async () => {
@@ -202,6 +209,7 @@ export default function Consultation() {
             </div>
             <div className='border-1 p-5 h-full shadow-md rounded-lg flex flex-col w-[700px]'>
                 <ChatHeader onNewSession={handleNew} activeAgent={activeAgent} />
+                <AiDisclaimerBanner />
                 <ChatWindow messages={chatList} isAiTyping={isAiTyping} />
                 <MessageInput
                     value={msg}
@@ -210,6 +218,10 @@ export default function Consultation() {
                     onSend={handleSend}
                 />
             </div>
+            <CrisisInterventionModal
+                open={crisisModalOpen}
+                onClose={() => setCrisisModalOpen(false)}
+            />
         </div>
     )
 }

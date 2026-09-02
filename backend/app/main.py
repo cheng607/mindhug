@@ -3,6 +3,8 @@ from pathlib import Path
 import logging
 
 from fastapi import FastAPI, HTTPException, Request
+
+from app.api.legal import router as legal_router
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -19,11 +21,14 @@ from app.api.sessions import router as sessions_router
 from app.api.user import router as user_router
 from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
+from app.core.logging_config import setup_logging
+from app.core.rate_limit import RateLimitMiddleware
 from app.models.role import Role
 from app.services.prompt_config_service import PromptConfigService
 from app.services.rag_service import RAGService
 from app.services.seed_service import seed_knowledge
 
+setup_logging(debug=settings.DEBUG)
 logger = logging.getLogger(__name__)
 
 
@@ -109,6 +114,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RateLimitMiddleware)
 
 upload_path = Path(settings.UPLOAD_DIR)
 upload_path.mkdir(parents=True, exist_ok=True)
@@ -123,6 +129,7 @@ app.include_router(analytics_router, prefix="/api")
 app.include_router(risk_alerts_router, prefix="/api")
 app.include_router(agent_config_router, prefix="/api")
 app.include_router(rag_router, prefix="/api")
+app.include_router(legal_router, prefix="/api")
 
 
 @app.get("/health")

@@ -52,6 +52,7 @@ def register_user(client: TestClient, creds: dict, **extra):
         "password": creds["password"],
         "confirmPassword": creds["password"],
         "gender": 1,
+        "agreeTerms": True,
         **extra,
     }
     return client.post("/api/user/add", json=payload)
@@ -91,11 +92,29 @@ def test_register_password_mismatch(client: TestClient, user_credentials):
             "password": user_credentials["password"],
             "confirmPassword": "wrong",
             "gender": 1,
+            "agreeTerms": True,
         },
     )
     body = resp.json()
     assert resp.status_code == 422
     assert body["code"] == "422"
+    assert body["success"] is False
+
+
+def test_register_without_agree_terms(client: TestClient, user_credentials):
+    resp = client.post(
+        "/api/user/add",
+        json={
+            "username": user_credentials["username"],
+            "email": user_credentials["email"],
+            "password": user_credentials["password"],
+            "confirmPassword": user_credentials["password"],
+            "gender": 1,
+            "agreeTerms": False,
+        },
+    )
+    body = resp.json()
+    assert resp.status_code == 422
     assert body["success"] is False
 
 
@@ -109,6 +128,7 @@ def test_register_ignores_admin_user_type(client: TestClient):
             "password": "123456",
             "confirmPassword": "123456",
             "gender": 1,
+            "agreeTerms": True,
             "userType": 2,
         },
     )

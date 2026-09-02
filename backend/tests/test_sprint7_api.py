@@ -52,6 +52,7 @@ def _register_and_login(client: TestClient, as_admin: bool = False) -> dict:
         "password": "123456",
         "confirmPassword": "123456",
         "gender": 1,
+        "agreeTerms": True,
     }
     client.post("/api/user/add", json=payload)
     if as_admin:

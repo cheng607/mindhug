@@ -16,6 +16,14 @@ class RegisterRequest(BaseModel):
     nickname: str | None = ""
     phone: str | None = ""
     gender: int = 1
+    agreeTerms: bool = Field(..., description="必须同意用户协议")
+
+    @field_validator("agreeTerms")
+    @classmethod
+    def must_agree_terms(cls, v: bool) -> bool:
+        if not v:
+            raise ValueError("请阅读并同意用户协议")
+        return v
 
     @field_validator("confirmPassword")
     @classmethod

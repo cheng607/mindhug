@@ -19,6 +19,9 @@ import Article from "../components/Article";
 import Profile from "../pages/Profile";
 import RiskAlertCenter from "../components/RiskAlertCenter";
 import AgentConfig from "../components/AgentConfig";
+import UserAgreement from "../pages/UserAgreement";
+import PrivacyPolicy from "../pages/PrivacyPolicy";
+import Disclaimer from "../pages/Disclaimer";
 
 const userRoutes = {
     path: '/user',
@@ -72,6 +75,9 @@ const router = createBrowserRouter([
         ]
     },
     { path: 'article/:id', element: <Article /> },
+    { path: 'agreement', element: <UserAgreement /> },
+    { path: 'privacy', element: <PrivacyPolicy /> },
+    { path: 'disclaimer', element: <Disclaimer /> },
     userRoutes,
     authRoutes,
     backRoutes,

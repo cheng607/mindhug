@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { message } from 'antd'
 import { fetchEventSource } from '@microsoft/fetch-event-source'
 import { apiBaseUrl } from '../config'
@@ -7,6 +7,7 @@ import { generateUniqueId, mergeStreamChunk } from '../utils/stream'
 
 interface UseChatStreamOptions {
     onStreamClose?: (sessionId: string) => void
+    onCrisisDetected?: () => void
 }
 
 export function useChatStream(options: UseChatStreamOptions = {}) {
@@ -14,7 +15,12 @@ export function useChatStream(options: UseChatStreamOptions = {}) {
     const [activeAgent, setActiveAgent] = useState<string | null>(null)
     const abortControllerRef = useRef<AbortController | null>(null)
     const onStreamCloseRef = useRef(options.onStreamClose)
-    onStreamCloseRef.current = options.onStreamClose
+    const onCrisisDetectedRef = useRef(options.onCrisisDetected)
+
+    useEffect(() => {
+        onStreamCloseRef.current = options.onStreamClose
+        onCrisisDetectedRef.current = options.onCrisisDetected
+    }, [options.onStreamClose, options.onCrisisDetected])
 
     const abortStream = useCallback(() => {
         if (abortControllerRef.current) {
@@ -81,6 +87,9 @@ export function useChatStream(options: UseChatStreamOptions = {}) {
                                 return newList
                             })
                             return
+                        }
+                        if (payload.agent === 'crisis') {
+                            onCrisisDetectedRef.current?.()
                         }
                         if (payload.agentName) {
                             setActiveAgent(payload.agentName)

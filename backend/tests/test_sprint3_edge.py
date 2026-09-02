@@ -50,6 +50,7 @@ def _auth(client: TestClient, admin: bool = False) -> dict:
             "password": "123456",
             "confirmPassword": "123456",
             "gender": 1,
+            "agreeTerms": True,
         },
     )
     if admin:

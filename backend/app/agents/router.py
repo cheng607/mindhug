@@ -2,7 +2,7 @@
 import re
 
 from app.agents.types import IntentType
-from app.services.session_service import CRISIS_KEYWORDS
+from app.core.crisis import CRISIS_KEYWORDS
 
 KNOWLEDGE_PATTERNS = re.compile(r"(什么是|什么叫|科普|知识|了解|含义|定义|区别)")
 COUNSEL_PATTERNS = re.compile(r"(建议|怎么办|如何|帮助|应该|怎么做|有什么方法)")

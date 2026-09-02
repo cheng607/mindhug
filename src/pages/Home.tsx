@@ -56,8 +56,15 @@ export default function Home() {
             <Content>
                 <Outlet />
             </Content>
-            <Footer className="flex items-center justify-center bg-[#202834] text-white h-10">
-                @2026 心理健康AI助手
+            <Footer className="flex flex-col items-center justify-center bg-[#202834] text-white py-4 gap-2">
+                <div className="flex items-center gap-4 text-sm">
+                    <Link to="/agreement" className="text-gray-300 hover:text-white">用户协议</Link>
+                    <span className="text-gray-600">|</span>
+                    <Link to="/privacy" className="text-gray-300 hover:text-white">隐私政策</Link>
+                    <span className="text-gray-600">|</span>
+                    <Link to="/disclaimer" className="text-gray-300 hover:text-white">免责声明</Link>
+                </div>
+                <div className="text-xs text-gray-400">@2026 MindHug 心语陪伴 · AI 服务不能替代专业心理咨询</div>
             </Footer>
         </Layout >
     )

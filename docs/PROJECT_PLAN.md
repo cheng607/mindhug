@@ -540,13 +540,13 @@ Week 3: 部署与工程化
 
 #### Sprint 8（W15–W16）：产品化
 
-- [ ] 用户协议 + 免责声明
-- [ ] 危机干预固定流程
-- [ ] 接口限流 + 日志脱敏
-- [ ] Docker Compose 生产配置
-- [ ] GitHub Actions CI
-- [ ] 基础测试（API 集成测试）
-- [ ] README + 部署文档完善
+- [x] 用户协议 + 免责声明
+- [x] 危机干预固定流程
+- [x] 接口限流 + 日志脱敏
+- [x] Docker Compose 生产配置
+- [x] GitHub Actions CI
+- [x] 基础测试（API 集成测试）
+- [x] README + 部署文档完善
 
 ---
 

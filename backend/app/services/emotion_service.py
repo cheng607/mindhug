@@ -15,7 +15,7 @@ from app.services.llm_service import llm_service
 
 logger = logging.getLogger(__name__)
 
-CRISIS_KEYWORDS = ("自杀", "不想活", "结束生命", "自残", "割腕", "伤害他人")
+from app.core.crisis import CRISIS_KEYWORDS
 NEGATIVE_WORDS = ("压力", "焦虑", "失眠", "难过", "孤独", "抑郁", "害怕", "崩溃", "疲惫", "绝望")
 
 EMOTION_LABELS = {

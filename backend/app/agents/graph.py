@@ -20,11 +20,11 @@ from app.core.config import settings
 from app.models.agent_execution_log import AgentExecutionLog
 from app.models.chat_session import SENDER_AI, SENDER_USER
 from app.models.message import Message
-from app.prompts.counselor import CRISIS_RESPONSE_TEMPLATE
+from app.core.crisis import CRISIS_KEYWORDS, CRISIS_RESPONSE_TEMPLATE
 from app.services.llm_service import llm_service
 from app.services.prompt_config_service import PromptConfigService
 from app.services.risk_alert_service import RiskAlertService
-from app.services.session_service import CRISIS_KEYWORDS, MOCK_AI_RESPONSE
+from app.services.session_service import MOCK_AI_RESPONSE
 
 logger = logging.getLogger(__name__)
 
