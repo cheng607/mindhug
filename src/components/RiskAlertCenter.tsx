@@ -173,6 +173,7 @@ export default function RiskAlertCenter() {
                 columns={columns}
                 dataSource={alerts}
                 loading={loading}
+                scroll={{ x: 900 }}
                 pagination={{ current: currentPage, pageSize, total, showSizeChanger: true }}
                 onChange={handleTableChange}
             />

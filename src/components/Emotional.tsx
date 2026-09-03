@@ -228,6 +228,7 @@ export default function Emotional() {
                     columns={columns}
                     rowKey="id"
                     loading={loading}
+                    scroll={{ x: 1000 }}
                     pagination={{
                         current: currentPage,
                         pageSize: pageSize,

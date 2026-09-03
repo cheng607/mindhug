@@ -209,9 +209,10 @@ function BackLayout() {
                 </Header>
 
                 <Content
+                    className="overflow-x-auto"
                     style={{
-                        margin: '24px 16px',
-                        padding: 24,
+                        margin: '16px 12px',
+                        padding: 16,
                         minHeight: 280,
                         background: colorBgContainer,
                         borderRadius: borderRadiusLG,

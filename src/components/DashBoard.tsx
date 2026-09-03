@@ -335,8 +335,8 @@ export default function DashBoard() {
     return (
         <>
             {/* 顶部卡片区域 */}
-            <div className="flex items-center justify-around mb-5">
-                <div className="flex w-60 shadow-md rounded-lg p-4 gap-4">
+            <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="flex gap-4 rounded-lg p-4 shadow-md">
                     <img src={Icon1} alt="" />
                     <div>
                         <div className="text-gray-500">总用户数</div>
@@ -344,7 +344,7 @@ export default function DashBoard() {
                         <div className="text-gray-500 text-xs">活跃用户：{data?.systemOverview.activeUsers}</div>
                     </div>
                 </div>
-                <div className="flex w-60 shadow-md rounded-lg p-4 gap-4">
+                <div className="flex gap-4 rounded-lg p-4 shadow-md">
                     <img src={Icon2} alt="" />
                     <div>
                         <div className="text-gray-500">情绪日志</div>
@@ -352,7 +352,7 @@ export default function DashBoard() {
                         <div className="text-gray-500 text-xs">今日新增：{data?.systemOverview.todayNewDiaries}</div>
                     </div>
                 </div>
-                <div className="flex w-60 shadow-md rounded-lg p-4 gap-4">
+                <div className="flex gap-4 rounded-lg p-4 shadow-md">
                     <img src={Icon3} alt="" />
                     <div>
                         <div className="text-gray-500">咨询会话</div>
@@ -360,7 +360,7 @@ export default function DashBoard() {
                         <div className="text-gray-500 text-xs">今日新增：{data?.systemOverview.todayNewSessions}</div>
                     </div>
                 </div>
-                <div className="flex w-60 shadow-md rounded-lg p-4 gap-4">
+                <div className="flex gap-4 rounded-lg p-4 shadow-md">
                     <img src={Icon4} alt="" />
                     <div>
                         <div className="text-gray-500">平均情绪</div>
@@ -369,16 +369,16 @@ export default function DashBoard() {
                     </div>
                 </div>
             </div>
-            <div className="flex gap-5">
-                <div className="w-1/2 shadow-lg rounded-lg p-4">
-                    <div className="text-lg mb-3">趋势情绪分析</div>
+            <div className="flex flex-col gap-5 lg:flex-row">
+                <div className="w-full rounded-lg p-4 shadow-lg lg:w-1/2">
+                    <div className="mb-3 text-lg">趋势情绪分析</div>
                     <Divider size="small" />
-                    <div className="w-full h-96" ref={emotionChartRef}></div>
+                    <div className="h-96 w-full" ref={emotionChartRef}></div>
                 </div>
-                <div className="w-1/2 shadow-lg rounded-lg p-4">
-                    <div className="text-lg mb-3">咨询会话统计</div>
+                <div className="w-full rounded-lg p-4 shadow-lg lg:w-1/2">
+                    <div className="mb-3 text-lg">咨询会话统计</div>
                     <Divider size="small" />
-                    <div className="flex items-center justify-around my-3">
+                    <div className="my-3 flex items-center justify-around">
                         <div className="flex flex-col items-center">
                             <div className="text-gray-400">总会话数</div>
                             <div className="text-lg font-medium">{data?.consultationStats.totalSessions}</div>
@@ -394,13 +394,13 @@ export default function DashBoard() {
                             <div className="text-lg font-medium">{data?.systemOverview.activeUsers}</div>
                         </div>
                     </div>
-                    <div className="w-full h-80" ref={sessionChartRef}></div>
+                    <div className="h-80 w-full" ref={sessionChartRef}></div>
                 </div>
             </div>
-            <div className="w-full shadow-lg rounded-lg p-4 my-4">
-                <div className="text-lg mb-3">用户活跃度趋势</div>
+            <div className="my-4 w-full rounded-lg p-4 shadow-lg">
+                <div className="mb-3 text-lg">用户活跃度趋势</div>
                 <Divider size="small" />
-                <div className="w-full h-96" ref={activeChartRef}></div>
+                <div className="h-96 w-full" ref={activeChartRef}></div>
             </div>
         </>
     )

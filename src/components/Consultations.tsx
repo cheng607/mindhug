@@ -141,6 +141,7 @@ export default function Consultations() {
                 rowKey="id"
                 bordered
                 loading={loading}
+                scroll={{ x: 800 }}
                 pagination={{
                     current: currentPage,
                     pageSize: pageSize,

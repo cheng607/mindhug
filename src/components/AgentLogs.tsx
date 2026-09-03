@@ -139,6 +139,7 @@ export default function AgentLogs() {
                 columns={columns}
                 rowKey="id"
                 loading={loading}
+                scroll={{ x: 1000 }}
                 pagination={{
                     current: currentPage,
                     pageSize,

@@ -30,8 +30,8 @@ export default function Home() {
     };
 
     return (
-        <Layout className="flex h-screen flex-col overflow-hidden">
-            <Header className="site-header !flex !h-11 shrink-0 items-center justify-between !bg-white !px-3 !py-0 sm:!px-5">
+        <Layout className={`flex flex-col ${isChatPage ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
+            <Header className="site-header sticky top-0 z-50 !flex !h-11 shrink-0 items-center justify-between !bg-white !px-3 !py-0 sm:!px-5">
                 <Link to="/" className="flex items-center gap-2">
                     <img src={AgentIcon} alt="" className="h-6 w-6" />
                     <span className="text-sm font-medium text-gray-800">MindHug 心语陪伴</span>
@@ -56,7 +56,13 @@ export default function Home() {
                     )}
                 </div>
             </Header>
-            <Content className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <Content
+                className={
+                    isChatPage
+                        ? 'flex min-h-0 flex-1 flex-col overflow-hidden'
+                        : 'flex flex-1 flex-col'
+                }
+            >
                 <Outlet />
             </Content>
             {!isChatPage && (

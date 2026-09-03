@@ -307,6 +307,7 @@ export default function Knowledge() {
                     loading={loading} // 加载状态
                     rowKey="key" // 行唯一标识
                     bordered
+                    scroll={{ x: 900 }}
                     pagination={{
                         current: currentPage,
                         pageSize: pageSize,
