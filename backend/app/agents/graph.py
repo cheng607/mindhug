@@ -149,7 +149,11 @@ class AgentGraph:
         rag_context = ""
         need_rag = intent == "knowledge" or should_supplement_rag(intent, user_message)
         if need_rag:
-            citations, rag_context = await retrieve_knowledge(db, user_message)
+            citations, rag_context = await retrieve_knowledge(
+                db,
+                user_message,
+                allow_whitelist_web=(intent == "knowledge"),
+            )
             if citations:
                 cite_payload = json.dumps(
                     {"citations": [item.to_dict() for item in citations]},

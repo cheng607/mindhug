@@ -198,16 +198,37 @@ export default function Consultations() {
                                         <span>参考来源</span>
                                     </div>
                                     <div className="flex flex-col gap-1">
-                                        {detail.citations.map((cite, index) => (
-                                            <Link
-                                                key={`${cite.articleId}-${index}`}
-                                                to={`/article/${cite.articleId}`}
-                                                className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
-                                                target="_blank"
-                                            >
-                                                《{cite.title}》
-                                            </Link>
-                                        ))}
+                                        {detail.citations.map((cite: { articleId?: string; title: string; url?: string; source?: string }, index: number) => {
+                                            const label = cite.source === 'web' ? `《${cite.title}》（网页）` : `《${cite.title}》`
+                                            if (cite.url) {
+                                                return (
+                                                    <a
+                                                        key={`web-${cite.url}-${index}`}
+                                                        href={cite.url}
+                                                        className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                                                        target="_blank"
+                                                        rel="noreferrer noopener"
+                                                    >
+                                                        {label}
+                                                    </a>
+                                                )
+                                            }
+                                            if (cite.articleId) {
+                                                return (
+                                                    <Link
+                                                        key={`${cite.articleId}-${index}`}
+                                                        to={`/article/${cite.articleId}`}
+                                                        className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                                                        target="_blank"
+                                                    >
+                                                        {label}
+                                                    </Link>
+                                                )
+                                            }
+                                            return (
+                                                <span key={`cite-${index}`} className="text-xs text-gray-600">{label}</span>
+                                            )
+                                        })}
                                     </div>
                                 </div>
                             )}

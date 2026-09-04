@@ -24,15 +24,21 @@ class RAGCitation:
     title: str
     snippet: str
     score: float
+    url: str | None = None
+    source: str = "local"  # local | web
 
     def to_dict(self) -> dict:
         score = self.score if math.isfinite(self.score) else 0.0
-        return {
-            "articleId": str(self.article_id),
+        data = {
+            "articleId": str(self.article_id) if self.article_id else "",
             "title": self.title,
             "snippet": self.snippet,
             "score": round(score, 4),
+            "source": self.source,
         }
+        if self.url:
+            data["url"] = self.url
+        return data
 
 
 def strip_html(text: str) -> str:
@@ -181,5 +187,7 @@ class RAGService:
             return ""
         parts = []
         for index, item in enumerate(citations, start=1):
-            parts.append(f"[{index}] 《{item.title}》：{item.snippet}")
+            origin = f"（{item.url}）" if item.url else ""
+            source_tag = "网页" if item.source == "web" else "知识库"
+            parts.append(f"[{index}][{source_tag}] 《{item.title}》{origin}：{item.snippet}")
         return "\n".join(parts)

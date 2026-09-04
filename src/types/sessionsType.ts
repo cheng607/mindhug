@@ -43,6 +43,8 @@ export interface CitationType {
     title: string
     snippet: string
     score?: number
+    url?: string
+    source?: 'local' | 'web' | string
 }
 
 export interface newChatParam {

@@ -110,8 +110,13 @@ def _pick_variant(options: list[str], seed: int) -> str:
 def _append_citation_block(body: str, citations: list[RAGCitation] | None) -> str:
     if not citations:
         return body
-    refs = "\n".join(f"- 《{item.title}》" for item in citations[:3])
-    return f"{body}\n\n**参考来源：**\n{refs}"
+    refs = []
+    for item in citations[:3]:
+        if item.url:
+            refs.append(f"- 《{item.title}》 {item.url}")
+        else:
+            refs.append(f"- 《{item.title}》")
+    return f"{body}\n\n**参考来源：**\n" + "\n".join(refs)
 
 
 def _build_contextual_follow_up(

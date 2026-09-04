@@ -46,6 +46,15 @@ class Settings(BaseSettings):
     EMBEDDING_DIM: int = 384
     RAG_TOP_K: int = 3
 
+    # 白名单联网搜索（本地 RAG 不足时补充；仅知识意图启用）
+    WHITELIST_SEARCH_ENABLED: bool = True
+    WHITELIST_SEARCH_DOMAINS: str = (
+        "www.nhc.gov.cn,www.chinacdc.cn,www.who.int,www.cdc.gov"
+    )
+    WHITELIST_SEARCH_SCORE_THRESHOLD: float = 0.32
+    WHITELIST_SEARCH_TOP_K: int = 2
+    WHITELIST_SEARCH_TIMEOUT: float = 8.0
+
     # 限流
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT_USE_REDIS: bool = True
@@ -92,6 +101,14 @@ class Settings(BaseSettings):
         if self.EMBEDDING_BASE_URL:
             return self.EMBEDDING_BASE_URL.rstrip("/")
         return self.llm_base_url
+
+    @property
+    def whitelist_search_domains(self) -> list[str]:
+        return [
+            item.strip().lower().removeprefix("https://").removeprefix("http://").strip("/")
+            for item in self.WHITELIST_SEARCH_DOMAINS.split(",")
+            if item.strip()
+        ]
 
 
 settings = Settings()
